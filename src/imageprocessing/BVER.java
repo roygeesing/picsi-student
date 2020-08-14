@@ -2,6 +2,9 @@ package imageprocessing;
 
 import org.eclipse.swt.SWT;
 
+import gui.ImageMenu;
+import gui.ImageMenuItem;
+import gui.MRU;
 import gui.TwinView;
 
 /**
@@ -14,8 +17,8 @@ public class BVER extends ImageMenu {
 	 * Registration of image operations
 	 * @param views
 	 */
-	public BVER(TwinView views) {
-		super(views);
+	public BVER(TwinView views, MRU mru) {
+		super(views, mru);
 
 		add(new ImageMenuItem("Channel R\tCtrl+1", 								SWT.CTRL | '1', new ChannelRGB(0)));
 		add(new ImageMenuItem("Channel G\tCtrl+2", 								SWT.CTRL | '2', new ChannelRGB(1)));

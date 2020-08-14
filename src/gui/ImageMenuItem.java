@@ -1,4 +1,6 @@
-package imageprocessing;
+package gui;
+
+import imageprocessing.IImageProcessor;
 
 /**
  * Menu items for MAGB and BVER menus

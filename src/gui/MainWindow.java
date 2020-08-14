@@ -27,13 +27,16 @@ import imageprocessing.MAGB;
 public class MainWindow {
 	public TwinView m_views;
 	
+	private final MRU m_mru = new MRU(this);
+
 	private Shell m_shell;		// subclassing of Shell is not allowed, therefore containing
 	private Display m_display;
 	private Editor m_editor;
 	private String m_lastPath; // used to seed the file dialog
 	private Label m_statusLabel, m_zoomLabel;
 	private MenuItem m_editMenuItem;
-	private MRU m_mru;
+	private MAGB m_magb;
+	private BVER m_bver;
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////7
 	// public methods section
@@ -42,10 +45,7 @@ public class MainWindow {
 	 * @wbp.parser.entryPoint
 	 */
 	public Shell open(Display dpy) {
-		// create MRU list
-		m_mru = new MRU(this);
-		
-		// Create a window and set its title.
+		// create a window and set its title.
 		m_display = dpy;
 		m_shell = new Shell(m_display);
 		{
@@ -86,6 +86,8 @@ public class MainWindow {
 		
 		// create twin view: must be done before createMenuBar, because of dynamic image processing menu items
 		m_views = new TwinView(this, m_shell, SWT.NONE);
+		m_magb = new MAGB(m_views, m_mru);
+		m_bver = new BVER(m_views, m_mru);
 		
 		// create
 		createMenuBar();
@@ -349,16 +351,17 @@ public class MainWindow {
 	}
 	
 	// File menu
-	private void createFileMenu(Menu menuBar) {		
-		final int CLOSEINPUT = 4;
-		final int CLOSEOUTPUT = 5;
-		final int CLOSEBOTH = 6;
-		final int SAVE = 8;
-		final int SAVEAS = 9;
-		final int SAVEINPAS = 10;
-		final int EDIT = 12;
-		final int PRINT = 14;
-		final int SWAP = 16;
+	private void createFileMenu(Menu menuBar) {	
+		final int OPENRUNLAST = 2;
+		final int CLOSEINPUT = 5;
+		final int CLOSEOUTPUT = 6;
+		final int CLOSEBOTH = 7;
+		final int SAVE = 9;
+		final int SAVEAS = 10;
+		final int SAVEINPAS = 11;
+		final int EDIT = 13;
+		final int PRINT = 15;
+		final int SWAP = 17;
 		
 		// File menu
 		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
@@ -369,6 +372,7 @@ public class MainWindow {
 			@Override
 			public void handleEvent(Event e) {
 				MenuItem[] menuItems = fileMenu.getItems();
+				menuItems[OPENRUNLAST].setEnabled(m_mru.getLastOperation() != null);
 				menuItems[CLOSEINPUT].setEnabled(!m_views.isEmpty());
 				menuItems[CLOSEOUTPUT].setEnabled(m_views.hasSecondView());
 				menuItems[CLOSEBOTH].setEnabled(m_views.hasSecondView());
@@ -412,8 +416,29 @@ public class MainWindow {
 					return;
 				m_lastPath = fileChooser.getFilterPath();
 
-				m_mru.moveFileNameToTop(filename);
+				m_mru.moveFileNameToTop(-1, filename);
 				updateFile(filename);
+			}
+		});
+		
+		// File -> Open and Run Last operation
+		item = new MenuItem(fileMenu, SWT.PUSH);
+		item.setText("Open and &Run Last\tCtrl+R");
+		item.setAccelerator(SWT.MOD1 + 'R');
+		//setIcon(item, "images/newHS.png");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String filename = m_mru.getTop();
+				if (filename != null) {
+					updateFile(filename);
+					String lastOperation = m_mru.getLastOperation();
+					if (lastOperation != null) {
+						if (!m_magb.findAndRun(lastOperation)) {
+							m_bver.findAndRun(lastOperation);
+						}
+					}
+				}
 			}
 		});
 		
@@ -630,8 +655,6 @@ public class MainWindow {
 	
 	// MAGB menu
 	private void createMagbMenu(Menu menuBar) {
-		final MAGB magb = new MAGB(m_views);
-		
 		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
 		item.setText("&MAGB");
 		final Menu imageMenu = new Menu(m_shell, SWT.DROP_DOWN);
@@ -641,19 +664,17 @@ public class MainWindow {
 			public void handleEvent(Event e) {
 				MenuItem[] menuItems = imageMenu.getItems();
 				for (int i=0; i < menuItems.length; i++) {
-					menuItems[i].setEnabled(!m_views.isEmpty() && magb.isEnabled(i));
+					menuItems[i].setEnabled(!m_views.isEmpty() && m_magb.isEnabled(i));
 				}
 			}
 		});
 
 		// user defined image menu items
-		magb.createMenuItems(imageMenu);
+		m_magb.createMenuItems(imageMenu);
 	}
 	
 	// BVER menu
 	private void createBverMenu(Menu menuBar) {
-		final BVER bver = new BVER(m_views);
-		
 		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
 		item.setText("&BVER");
 		final Menu imageMenu = new Menu(m_shell, SWT.DROP_DOWN);
@@ -663,13 +684,13 @@ public class MainWindow {
 			public void handleEvent(Event e) {
 				MenuItem[] menuItems = imageMenu.getItems();
 				for (int i=0; i < menuItems.length; i++) {
-					menuItems[i].setEnabled(!m_views.isEmpty() && bver.isEnabled(i));
+					menuItems[i].setEnabled(!m_views.isEmpty() && m_bver.isEnabled(i));
 				}
 			}
 		});
 
 		// user defined image menu items
-		bver.createMenuItems(imageMenu);
+		m_bver.createMenuItems(imageMenu);
 	}
 	
 	// Window menu

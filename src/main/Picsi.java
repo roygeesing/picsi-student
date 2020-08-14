@@ -30,7 +30,7 @@ public class Picsi {
 	public static final int IMAGE_TYPE_INDEXED = 8;
 
 	public static final String APP_NAME = "FHNW Picsi";
-	public static final String APP_VERSION = "2.5.2020.24 (Student)\n\n"; // major.minor.year.week
+	public static final String APP_VERSION = "2.6.2020.33 (Student)\n\n"; // major.minor.year.week
 	public static final String APP_COPYRIGHT = "Copyright \u00a9 " + new GregorianCalendar().get(Calendar.YEAR) 
 			+ "\nUniversity of Applied Sciences Northwestern Switzerland\nFHNW School of Engineering, IMVS\nWindisch, Switzerland\n\n";
 	public static final String APP_URL = "https://gitlab.fhnw.ch/christoph.stamm/picsi-student";

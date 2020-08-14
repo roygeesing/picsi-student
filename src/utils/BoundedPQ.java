@@ -3,14 +3,14 @@ package utils;
 import java.util.*;
 
 /**
- * Space bounded priority queue (thread-safe). The elements are ordered by the natural order of the elements.
- * Stores a specified number of elements with high priority.
+ * Space bounded priority queue. The elements are ordered by the natural order of the elements.
+ * Stores a bounded number of elements in order of their priority. Element with lowest priority will be replaced first.
  * 
  * @author Christoph Stamm
  *
  * @param <E> data type of elements
  */
-public class BoundedPQ<E> {
+public class BoundedPQ<E extends Comparable<? super E>> implements Iterable<E> {
 	private int m_capacity;		// maximum number of elements in the priority queue
 	private TreeSet<E> m_pq;	// priority queue implemented by a tree set
 	
@@ -27,7 +27,7 @@ public class BoundedPQ<E> {
 	 * Adds a new element e to the priority queue
 	 * @param e
 	 */
-	public synchronized void add(E e) {
+	public void add(E e) {
 		m_pq.add(e);
 		if (m_pq.size() > m_capacity) {
 			m_pq.pollFirst();
@@ -38,16 +38,32 @@ public class BoundedPQ<E> {
 	 * Returns an element with highest priority
 	 * @return
 	 */
-	public synchronized E last() {
+	public E getMax() {
 		return m_pq.last();
 	}
 	
 	/**
+	 * Returns an element with lowest priority
+	 * @return
+	 */
+	public E getMin() {
+		return m_pq.first();
+	}
+
+	/**
 	 * Removes and returns an element with highest priority
 	 * @return
 	 */
-	public synchronized E pollLast() {
+	public E removeMax() {
 		return m_pq.pollLast();
+	}
+	
+	/**
+	 * Removes and returns an element with lowest priority
+	 * @return
+	 */
+	public E removeMin() {
+		return m_pq.pollFirst();
 	}
 	
 	/**
@@ -56,5 +72,18 @@ public class BoundedPQ<E> {
 	 */
 	public int size() {
 		return m_pq.size();
+	}
+
+	/**
+	 * Returns the maximum number of elements that can be stored in the bounded priority queue
+	 * @return
+	 */
+	public int capacity() {
+		return m_capacity;
+	}
+
+	@Override
+	public Iterator<E> iterator() {
+		return m_pq.iterator();
 	}
 }
