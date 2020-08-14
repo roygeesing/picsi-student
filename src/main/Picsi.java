@@ -13,6 +13,7 @@ import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Shell;
 
 import files.ImageFiles;
@@ -48,19 +49,32 @@ public class Picsi {
 		display.dispose();
 	}
 
-	/*
-	 * Open an error dialog displaying the specified information.
+	/**
+	 * Create and return error message
+	 * @param msg error message
+	 * @param args variable arguments of the error message
+	 * @return
 	 */
 	public static String createMsg(String msg, Object[] args) {
 		MessageFormat formatter = new MessageFormat(msg);
 		return formatter.format(args);
 	}
 	
+	/**
+	 * Create and return error message
+	 * @param msg error message
+	 * @param arg single argument of the error message
+	 * @return
+	 */
 	public static String createMsg(String msg, Object arg) {
 		MessageFormat formatter = new MessageFormat(msg);
 		return formatter.format(new Object[]{arg});
 	}
 
+	/**
+	 * Return twin view
+	 * @return
+	 */
 	public static TwinView getTwinView() {
 		Control c = s_shell.getChildren()[0];
 		if (c instanceof TwinView) {
@@ -68,6 +82,27 @@ public class Picsi {
 		} else {
 			return null;
 		}
+	}
+
+	/**
+	 * Show output in output view and sleeps for some milliseconds
+	 * @param output image or null
+	 * @param milliseconds
+	 */
+	public static void showAndSleep(ImageData output, int milliseconds) {
+		if (output != null) {
+			Display display = s_shell.getDisplay();
+			getTwinView().showImageInSecondView(output);
+			Menu menuBar = s_shell.getMenuBar();
+			menuBar.setEnabled(false);
+			while (display.readAndDispatch());
+			try {
+				Thread.sleep(milliseconds);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			menuBar.setEnabled(true);
+		}		
 	}
 	
 	/**

@@ -25,6 +25,12 @@ import org.eclipse.swt.widgets.ScrollBar;
 
 import main.Picsi;
 
+/**
+ * Image line (row or column) viewer
+ * 
+ * @author Christoph Stamm
+ *
+ */
 public class LineViewer extends Dialog {
 	private Shell m_shell;
 	private Label m_statLbl;
