@@ -13,6 +13,8 @@ import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Shell;
 
@@ -87,19 +89,33 @@ public class Picsi {
 	/**
 	 * Show output in output view and sleeps for some milliseconds
 	 * @param output image or null
-	 * @param milliseconds
+	 * @param eventOrMs positive value: SWT event, e.g. SWT.KeyDown, negative value: sleeping time in ms 
 	 */
-	public static void showAndSleep(ImageData output, int milliseconds) {
+	public static void showAndWait(ImageData output, int eventOrMs) {
 		if (output != null) {
 			Display display = s_shell.getDisplay();
 			getTwinView().showImageInSecondView(output);
 			Menu menuBar = s_shell.getMenuBar();
 			menuBar.setEnabled(false);
 			while (display.readAndDispatch());
-			try {
-				Thread.sleep(milliseconds);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+			if (eventOrMs <= 0) {
+				try {
+					Thread.sleep(-eventOrMs);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			} else {
+				boolean[] cont = new boolean[1];
+				Listener keyListener = new Listener() {
+					@Override
+					public void handleEvent(Event event) {
+						cont[0] = true;
+					}
+				};
+				display.addFilter(eventOrMs, keyListener);
+				while (!cont[0]) 
+					if (!display.readAndDispatch()) display.sleep();
+				display.removeFilter(eventOrMs, keyListener);
 			}
 			menuBar.setEnabled(true);
 		}		
