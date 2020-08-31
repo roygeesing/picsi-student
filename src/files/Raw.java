@@ -6,6 +6,7 @@ import javax.swing.JTextArea;
 
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.RGB;
 
 /**
  * AOS Raw image file implementation (read only)
@@ -32,7 +33,9 @@ public class Raw implements IImageFile {
 			raf.read(raw);
 			
 			// create image
-			return new ImageData(width, height, 8, new PaletteData(0xFF, 0xFF, 0xFF), 4, raw);	// stride is a multiple of 4 bytes
+			RGB[] grayscale = new RGB[256];
+			for(int i = 0; i < grayscale.length; i++) grayscale[i] = new RGB(i, i, i);
+			return new ImageData(width, height, 8, new PaletteData(grayscale), 4, raw);	// stride is a multiple of 4 bytes
 		
 		} finally {
 			raf.close();			

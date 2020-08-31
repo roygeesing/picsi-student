@@ -378,7 +378,7 @@ public class WavesEdt extends Dialog {
     	
 		shell.setCursor(shell.getDisplay().getSystemCursor(SWT.CURSOR_WAIT));   	
     	
-    	final ImageData inData = views.getFirstImage();
+    	final ImageData inData = views.getImage(true);
     	m_fd = FFT.fft2D(inData);
     	updateTable();
 
@@ -508,7 +508,7 @@ public class WavesEdt extends Dialog {
 			outData = m_transformed;
 			if (m_equalizedBtn.getSelection()) {
 				outData = (ImageData)outData.clone();
-				// TODO HistogramEqualization.equalization(outData);
+				//HistogramEqualization.equalization(outData);
 			}
 			views.showImageInSecondView(outData);
 			m_disableUpdate = false;

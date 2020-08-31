@@ -143,20 +143,16 @@ public class TwinView extends Composite {
 		return m_synchronized;
 	}
 	
-	public ImageData getFirstImage() {
-		return m_view1.getImageData();
+	public ImageData getImage(boolean first) {
+		return (first) ? m_view1.getImageData() : m_view2.getImageData();
 	}
 	
-	public int getFirstImageType() {
-		return m_view1.getImageType();
+	public int getImageType(boolean first) {
+		return (first) ? m_view1.getImageType() : m_view2.getImageType();
 	}
 	
-	public ImageData getSecondImage() {
-		return m_view2.getImageData();
-	}
-	
-	public int getSecondImageType() {
-		return m_view2.getImageType();
+	public float getZoomFactor(boolean first) {
+		return (first) ? m_view1.getZoom() : m_view2.getZoom();
 	}
 	
 	public void swapImages() {
@@ -173,10 +169,11 @@ public class TwinView extends Composite {
 		refresh(false);
 	}
 	
-	public void showImageInFirstView(ImageData imageData) {
+	public void showImageInFirstView(ImageData imageData, String fileName) {
 		if (imageData == null) return;
 		
 		m_view1.setImageData(imageData);
+		m_doc1.setFileName(fileName);
 		layout();
 		refresh(false);
 		m_mainWnd.notifyAllMenus();
@@ -188,6 +185,7 @@ public class TwinView extends Composite {
 		if (!hasSecondView()) split();
 		if (hasSecondView()) {
 			m_view2.setImageData(imageData);
+			m_doc2.setFileName(null);
 			layout();
 			refresh(false);
 			m_mainWnd.notifyAllMenus();

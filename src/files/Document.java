@@ -102,4 +102,11 @@ public class Document {
 		m_file.displayTextOfBinaryImage(imageData, text);			
 	}
 
+	/**
+	 * Set or reset file name
+	 * @param fileName
+	 */
+	public void setFileName(String fileName) {
+		m_fileName = fileName;
+	}
 }

@@ -119,11 +119,7 @@ public class ColorTableDlg extends Dialog {
     		m_outputBtn.setSelection(false);
     	}
 		m_outputBtn.setEnabled(hasOutput);
-    	if (m_outputBtn.getSelection()) {
-    		m_imageData = views.getSecondImage();
-    	} else {
-    		m_imageData = views.getFirstImage();
-    	}
+		m_imageData = views.getImage(!m_outputBtn.getSelection());
     	
     	if (!m_imageData.palette.isDirect) {
     		Display device = m_shell.getDisplay();

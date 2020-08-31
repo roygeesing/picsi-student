@@ -281,13 +281,8 @@ public class LineViewer extends Dialog {
     		m_outputBtn.setSelection(false);
     	}
 		m_outputBtn.setEnabled(hasOutput);
-    	if (m_outputBtn.getSelection()) {
-    		m_imageData = views.getSecondImage();
-    		m_imageType = views.getSecondImageType();
-    	} else {
-	    	m_imageData = views.getFirstImage();
-	    	m_imageType = views.getFirstImageType();
-    	}
+		m_imageData = views.getImage(!m_outputBtn.getSelection());
+		m_imageType = views.getImageType(!m_outputBtn.getSelection());
     	
 		// enable channel buttons and get selected channel
 		boolean b = m_imageType == Picsi.IMAGE_TYPE_RGB;

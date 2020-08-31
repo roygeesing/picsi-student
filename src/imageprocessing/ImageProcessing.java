@@ -4,6 +4,10 @@ import utils.Parallel;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.RGB;
+
+import main.Picsi;
 
 /**
  * Image processing class: contains widely used image processing functions
@@ -13,6 +17,33 @@ import org.eclipse.swt.graphics.ImageData;
  *
  */
 public class ImageProcessing {
+	/**
+	 * Helper function to create a binary, grayscale or RGB image.
+	 * It doesn't support indexed color images
+	 * @param width
+	 * @param height
+	 * @param imageType Picsi.IMAGE_TYPE_BINARY, Picsi.IMAGE_TYPE_GRAY, or Picsi.IMAGE_TYPE_RGB
+	 * @return created ImageData
+	 */
+	public static ImageData createImage(int width, int height, int imageType) {
+		switch(imageType) {
+		case Picsi.IMAGE_TYPE_BINARY:
+			return new ImageData(width, height, 1, new PaletteData(new RGB[]{ new RGB(255, 255, 255), new RGB(0, 0, 0) }));
+		case Picsi.IMAGE_TYPE_GRAY:
+			//return new ImageData(width, height, 8, new PaletteData(0xFF, 0xFF, 0xFF)); // is not visualized correctly on Windows
+			RGB[] grayscale = new RGB[256];
+			for(int i = 0; i < grayscale.length; i++) grayscale[i] = new RGB(i, i, i);
+			return new ImageData(width, height, 8, new PaletteData(grayscale));
+		case Picsi.IMAGE_TYPE_RGB:
+			PaletteData pd = new PaletteData(0xFF0000, 0xFF00, 0xFF); // R G B
+			pd.redShift = -16;
+			pd.greenShift = -8;
+			pd.blueShift = 0;
+			return new ImageData(width, height, 24, pd);
+		}
+		return null;
+	}
+	
 	/**
 	 * Compute PSNR of two images of the same image type
 	 * @param inData1

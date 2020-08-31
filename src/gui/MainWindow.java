@@ -15,6 +15,7 @@ import main.Picsi;
 import files.Document;
 import files.ImageFiles;
 import imageprocessing.BVER;
+import imageprocessing.ColorSpaces;
 import imageprocessing.ImageProcessing;
 import imageprocessing.MAGB;
 
@@ -130,6 +131,12 @@ public class MainWindow {
 		return m_shell;
 	}
 	
+	/**
+	 * Show image as text in editor
+	 * @param doc image document
+	 * @param imageData image data
+	 * @param text text area of editor
+	 */
 	public void displayTextOfBinaryImage(Document doc, ImageData imageData, JTextArea text) {
 		doc.displayTextOfBinaryImage(imageData, text);
 	}
@@ -146,6 +153,10 @@ public class MainWindow {
 		}
 	}
 
+	/**
+	 * Show cursor position in status
+	 * @param pnt
+	 */
 	public void showImagePosition(Point pnt) {
 		if (pnt == null) {
 			m_statusLabel.setText("");
@@ -154,6 +165,11 @@ public class MainWindow {
 		}
 	}
 	
+	/**
+	 * Show zoom factors in status
+	 * @param zoom1
+	 * @param zoom2
+	 */
 	public void showZoomFactor(float zoom1, float zoom2) {
 		View view1 = m_views.getView(true);
 		String s = "(" + view1.getImageWidth() + ',' + view1.getImageHeight() + ") " + Math.round(zoom1*100) + '%';
@@ -200,6 +216,11 @@ public class MainWindow {
 		box.open();
 	}
 	
+	/**
+	 * File information class
+	 * @author Christoph Stamm
+	 *
+	 */
 	public static class FileInfo {
 		public String filename;
 		public int fileType;
@@ -213,53 +234,49 @@ public class MainWindow {
 	/***
 	 * Get the user to choose a file name and type to save.
 	 * @param imageType type of image (e.g. binary, grayscale, RGB, ...)
+	 * @param fileName suggested file name, can be null
 	 * @return
 	 */
-	public FileInfo chooseFileName(int imageType) {
+	private FileInfo chooseFileName(int imageType, String fileName) {
 		FileDialog fileChooser = new FileDialog(m_shell, SWT.SAVE);
 		String[] saveFilterExts = ImageFiles.saveFilterExtensions(imageType);
 		fileChooser.setFilterPath(m_lastPath);
 		fileChooser.setFilterExtensions(saveFilterExts);
 		fileChooser.setFilterNames(ImageFiles.saveFilterNames(imageType));
 		
-		String filename = null;
-		
-		if (m_views.hasSecondView()) {
-			Document doc = m_views.getDocument(false);
-			filename = doc.getFileName();			
+		if (fileName != null) {
+			fileChooser.setFileName(fileName);
+			fileChooser.setFilterIndex(ImageFiles.determineSaveFilterIndex(saveFilterExts, fileName));
 		}
-		if (filename != null) {
-			fileChooser.setFileName(filename);
-			fileChooser.setFilterIndex(ImageFiles.determineSaveFilterIndex(saveFilterExts, filename));
-		}
-		filename = fileChooser.open();
+		fileName = fileChooser.open();
 		m_lastPath = fileChooser.getFilterPath();
-		if (filename == null)
+		if (fileName == null)
 			return null;
 
 		// Figure out what file type the user wants.
 		//fileChooser.getFilterIndex();
-		int fileType = ImageFiles.determinefileType(filename);
+		int fileType = ImageFiles.determinefileType(fileName);
 		if (fileType == SWT.IMAGE_UNDEFINED) {
 			MessageBox box = new MessageBox(m_shell, SWT.ICON_ERROR);
 			box.setMessage(Picsi.createMsg("Unknown file extension: {0}\nPlease use bmp, gif, ico, jfif, jpeg, jpg, png, tif, or tiff.", 
-				filename.substring(filename.lastIndexOf('.') + 1)));
+					fileName.substring(fileName.lastIndexOf('.') + 1)));
 			box.open();
 			return null;
 		}
 		
-		if (new java.io.File(filename).exists()) {
+		if (new java.io.File(fileName).exists()) {
 			MessageBox box = new MessageBox(m_shell, SWT.ICON_QUESTION | SWT.OK | SWT.CANCEL);
-			box.setMessage(Picsi.createMsg("Overwrite {0}?", filename));
+			box.setMessage(Picsi.createMsg("Overwrite {0}?", fileName));
 			if (box.open() == SWT.CANCEL)
 				return null;
 		}
 		
-		return new FileInfo(filename, fileType);		
+		return new FileInfo(fileName, fileType);		
 	}
 	
 	/***
 	 * Get the user to choose a file to save.
+	 * Used in file editor.
 	 * @param fileType type of file (e.g. JPEG, BMP, ...)
 	 * @param imageType type of image (e.g. binary, grayscale, RGB, ...)
 	 * @return
@@ -294,6 +311,11 @@ public class MainWindow {
 		return new FileInfo(filename, fileType);		
 	}
 
+	/**
+	 * Load file and show image in first view
+	 * @param filename
+	 * @return
+	 */
 	public boolean updateFile(String filename) {
 		boolean retValue = true;
 		m_shell.setCursor(m_display.getSystemCursor(SWT.CURSOR_WAIT));
@@ -345,6 +367,7 @@ public class MainWindow {
 		createFileMenu(menuBar);
 		createMagbMenu(menuBar);
 		createBverMenu(menuBar);
+		createColorSpacesMenu(menuBar);
 		createWindowMenu(menuBar);
 		createHelpMenu(menuBar);
 		return menuBar;
@@ -423,8 +446,8 @@ public class MainWindow {
 		
 		// File -> Open and Run Last operation
 		item = new MenuItem(fileMenu, SWT.PUSH);
-		item.setText("Open and &Run Last\tCtrl+R");
-		item.setAccelerator(SWT.MOD1 + 'R');
+		item.setText("Open and Run Last\tCtrl+D");
+		item.setAccelerator(SWT.MOD1 + 'D');
 		//setIcon(item, "images/newHS.png");
 		item.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -657,12 +680,12 @@ public class MainWindow {
 	private void createMagbMenu(Menu menuBar) {
 		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
 		item.setText("&MAGB");
-		final Menu imageMenu = new Menu(m_shell, SWT.DROP_DOWN);
-		item.setMenu(imageMenu);
-		imageMenu.addListener(SWT.Show,  new Listener() {
+		final Menu magbMenu = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(magbMenu);
+		magbMenu.addListener(SWT.Show,  new Listener() {
 			@Override
 			public void handleEvent(Event e) {
-				MenuItem[] menuItems = imageMenu.getItems();
+				MenuItem[] menuItems = magbMenu.getItems();
 				for (int i=0; i < menuItems.length; i++) {
 					menuItems[i].setEnabled(!m_views.isEmpty() && m_magb.isEnabled(i));
 				}
@@ -670,19 +693,19 @@ public class MainWindow {
 		});
 
 		// user defined image menu items
-		m_magb.createMenuItems(imageMenu);
+		m_magb.createMenuItems(magbMenu);
 	}
 	
 	// BVER menu
 	private void createBverMenu(Menu menuBar) {
 		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
 		item.setText("&BVER");
-		final Menu imageMenu = new Menu(m_shell, SWT.DROP_DOWN);
-		item.setMenu(imageMenu);
-		imageMenu.addListener(SWT.Show,  new Listener() {
+		final Menu bverMenu = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(bverMenu);
+		bverMenu.addListener(SWT.Show,  new Listener() {
 			@Override
 			public void handleEvent(Event e) {
-				MenuItem[] menuItems = imageMenu.getItems();
+				MenuItem[] menuItems = bverMenu.getItems();
 				for (int i=0; i < menuItems.length; i++) {
 					menuItems[i].setEnabled(!m_views.isEmpty() && m_bver.isEnabled(i));
 				}
@@ -690,7 +713,192 @@ public class MainWindow {
 		});
 
 		// user defined image menu items
-		m_bver.createMenuItems(imageMenu);
+		m_bver.createMenuItems(bverMenu);
+	}
+	
+	// Color spaces menu
+	private void createColorSpacesMenu(Menu menuBar) {
+		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
+		item.setText("&Color-Spaces");
+		final Menu colorSpacesMenu = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(colorSpacesMenu);
+		
+		// Color space -> Luminance
+		item = new MenuItem(colorSpacesMenu, SWT.PUSH);
+		item.setText("Luminance");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String name = "Luminance";
+				m_views.showImageInFirstView(ColorSpaces.grayscale(), name);
+				setTitle(name, SWT.IMAGE_UNDEFINED);
+			}
+		});
+
+		// Color space -> RGB
+		item = new MenuItem(colorSpacesMenu, SWT.CASCADE);
+		item.setText("RGB");
+		final Menu rgb = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(rgb);
+
+		item = new MenuItem(rgb, SWT.PUSH);
+		item.setText("White on Top");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String name = "RGB Cube White";
+				m_views.showImageInFirstView(ColorSpaces.rgbCube(true), name);
+				setTitle(name, SWT.IMAGE_UNDEFINED);
+			}
+		});
+		item = new MenuItem(rgb, SWT.PUSH);
+		item.setText("Black on Top");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String name = "RGB Cube Black";
+				m_views.showImageInFirstView(ColorSpaces.rgbCube(false), name);
+				setTitle(name, SWT.IMAGE_UNDEFINED);
+			}
+		});
+
+		// Color space -> HSV
+		item = new MenuItem(colorSpacesMenu, SWT.CASCADE);
+		item.setText("HSV");
+		final Menu hsv = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(hsv);
+
+		item = new MenuItem(hsv, SWT.PUSH);
+		item.setText("V = 1");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String name = "HSV Top";
+				m_views.showImageInFirstView(ColorSpaces.hsv(true), name);
+				setTitle(name, SWT.IMAGE_UNDEFINED);
+			}
+		});
+		item = new MenuItem(hsv, SWT.PUSH);
+		item.setText("V decreasing");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String name = "HSV Bottom";
+				m_views.showImageInFirstView(ColorSpaces.hsv(false), name);
+				setTitle(name, SWT.IMAGE_UNDEFINED);
+			}
+		});
+		item = new MenuItem(hsv, SWT.PUSH);
+		item.setText("Color Wheel");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String name = "HSV Wheel";
+				m_views.showImageInFirstView(ColorSpaces.hsvWheel(), name);
+				setTitle(name, SWT.IMAGE_UNDEFINED);
+			}
+		});
+
+		// Color space -> YUV
+		item = new MenuItem(colorSpacesMenu, SWT.CASCADE);
+		item.setText("YUV");
+		final Menu yuv = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(yuv);
+
+		item = new MenuItem(yuv, SWT.PUSH);
+		item.setText("Y increasing");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String name = "YUV Top";
+				m_views.showImageInFirstView(ColorSpaces.yuv(true), name);
+				setTitle(name, SWT.IMAGE_UNDEFINED);
+			}
+		});
+		item = new MenuItem(yuv, SWT.PUSH);
+		item.setText("Y decreasing");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String name = "YUV Bottom";
+				m_views.showImageInFirstView(ColorSpaces.yuv(false), name);
+				setTitle(name, SWT.IMAGE_UNDEFINED);
+			}
+		});
+
+		// Color space -> CIE XYZ
+		item = new MenuItem(colorSpacesMenu, SWT.CASCADE);
+		item.setText("CIE XYZ");
+		final Menu xyz = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(xyz);
+
+		item = new MenuItem(xyz, SWT.PUSH);
+		item.setText("Y increasing");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String name = "XYZ White";
+				m_views.showImageInFirstView(ColorSpaces.xyz(true), name);
+				setTitle(name, SWT.IMAGE_UNDEFINED);
+			}
+		});
+		item = new MenuItem(xyz, SWT.PUSH);
+		item.setText("Y decreasing");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String name = "XYZ Black";
+				m_views.showImageInFirstView(ColorSpaces.xyz(false), name);
+				setTitle(name, SWT.IMAGE_UNDEFINED);
+			}
+		});
+		item = new MenuItem(xyz, SWT.PUSH);
+		item.setText("sRGB Gamut");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String name = "sRGB Gamut";
+				m_views.showImageInFirstView(ColorSpaces.sRGBGamut(), name);
+				setTitle(name, SWT.IMAGE_UNDEFINED);
+			}
+		});
+
+		// Color space -> CIE Lab
+		item = new MenuItem(colorSpacesMenu, SWT.CASCADE);
+		item.setText("CIE L*a*b*");
+		final Menu lab = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(lab);
+
+		item = new MenuItem(lab, SWT.PUSH);
+		item.setText("L increasing");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String name = "Lab White";
+				m_views.showImageInFirstView(ColorSpaces.lab(true), name);
+				setTitle(name, SWT.IMAGE_UNDEFINED);
+			}
+		});
+		item = new MenuItem(lab, SWT.PUSH);
+		item.setText("L decreasing");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String name = "Lab Black";
+				m_views.showImageInFirstView(ColorSpaces.lab(false), name);
+				setTitle(name, SWT.IMAGE_UNDEFINED);
+			}
+		});
+		item = new MenuItem(lab, SWT.PUSH);
+		item.setText("Color Wheel");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String name = "Lab Wheel";
+				m_views.showImageInFirstView(ColorSpaces.labWheel(), name);
+				setTitle(name, SWT.IMAGE_UNDEFINED);
+			}
+		});
 	}
 	
 	// Window menu
@@ -720,19 +928,20 @@ public class MainWindow {
 				menuItems[SYNCHRONIZE].setSelection(m_views.isSynchronized());
 				menuItems[SHOWOUTPUT].setEnabled(!m_views.isEmpty());
 				menuItems[SHOWOUTPUT].setSelection(m_views.hasSecondView());
-				menuItems[SHOWCOLORTABLE].setEnabled(!m_views.isEmpty() && (m_views.getFirstImageType() != Picsi.IMAGE_TYPE_RGB ||
-						(m_views.hasSecondView() && (m_views.getSecondImageType() != Picsi.IMAGE_TYPE_RGB))
+				menuItems[SHOWCOLORTABLE].setEnabled(!m_views.isEmpty() && (m_views.getImageType(true) != Picsi.IMAGE_TYPE_RGB ||
+						(m_views.hasSecondView() && (m_views.getImageType(false) != Picsi.IMAGE_TYPE_RGB))
 				));
 				menuItems[SHOWCOLORTABLE].setSelection(m_views.hasColorTable());		
 				menuItems[SHOWHISTOGRAM].setEnabled(!m_views.isEmpty());
 				menuItems[SHOWHISTOGRAM].setSelection(m_views.hasHistogram());		
 				menuItems[SHOWLINE].setEnabled(!m_views.isEmpty());
 				menuItems[SHOWLINE].setSelection(m_views.hasLineViewer());						
-				menuItems[SHOWPSNR].setEnabled(!m_views.isEmpty() && m_views.hasSecondView() && m_views.getFirstImageType() == m_views.getSecondImageType() 
+				menuItems[SHOWPSNR].setEnabled(!m_views.isEmpty() && m_views.hasSecondView() 
+						&& m_views.getImageType(true) == m_views.getImageType(false) 
 						&& m_views.getView(true).getImageHeight() == m_views.getView(false).getImageHeight()
 						&& m_views.getView(true).getImageWidth() == m_views.getView(false).getImageWidth()
 				);
-				menuItems[SHOWWAVES].setEnabled(!m_views.isEmpty() && m_views.getFirstImageType() == Picsi.IMAGE_TYPE_GRAY);
+				menuItems[SHOWWAVES].setEnabled(!m_views.isEmpty() && m_views.getImageType(true) == Picsi.IMAGE_TYPE_GRAY);
 				menuItems[SHOWWAVES].setSelection(m_views.hasWaves());		
 			}
 		});
@@ -789,8 +998,8 @@ public class MainWindow {
 
 		// Window -> Show Color Table
 		item = new MenuItem(windowMenu, SWT.CHECK);
-		item.setText("Show &Color Table...\tCtrl+C");
-		item.setAccelerator(SWT.MOD1 + 'C');
+		item.setText("Show Color &Table...\tCtrl+T");
+		item.setAccelerator(SWT.MOD1 + 'T');
 		item.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
@@ -834,9 +1043,9 @@ public class MainWindow {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
 				if (!m_views.isEmpty()) {
-					ImageData imageData1 = m_views.getFirstImage();
-					ImageData imageData2 = m_views.getSecondImage();
-					int imageType = m_views.getFirstImageType(); assert imageType == m_views.getSecondImageType();
+					ImageData imageData1 = m_views.getImage(true);
+					ImageData imageData2 = m_views.getImage(false);
+					int imageType = m_views.getImageType(true); assert imageType == m_views.getImageType(false);
 					double[] psnr = ImageProcessing.psnr(imageData1, imageData2, imageType);
 					MessageBox box = new MessageBox(Picsi.s_shell, SWT.OK);
 					
@@ -860,7 +1069,7 @@ public class MainWindow {
 		item.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
-				if (!m_views.isEmpty() && m_views.getFirstImageType() == Picsi.IMAGE_TYPE_GRAY) {
+				if (!m_views.isEmpty() && m_views.getImageType(true) == Picsi.IMAGE_TYPE_GRAY) {
 					m_views.toggleWaves();
 				}
 			}
@@ -890,12 +1099,29 @@ public class MainWindow {
 		});
 	}
 	
+	/**
+	 * Show image name in title bar
+	 * @param filename
+	 * @param fileType
+	 */
+	private void setTitle(String filename, int fileType) {
+		m_shell.setText(Picsi.createMsg(Picsi.APP_NAME + " - {0} ({1} {2})", 
+			new Object[]{filename, Picsi.imageTypeString(m_views.getImageType(true)), ImageFiles.fileTypeString(fileType)}));		
+	}
+	
+	/**
+	 * Save image in a file
+	 * @param first true: save image in first view, false: save image in second view
+	 * @param saveAs true: let the user choose a file name and offer existing name, false: use existing file name
+	 * @return true if successful
+	 */
 	private boolean saveFile(boolean first, boolean saveAs) {
 		final int imageType = m_views.getView(first).getImageType();
+		final String fileName = m_views.getDocument(first).getFileName();
 		FileInfo si = null;
 		
-		if (saveAs || m_views.getDocument(first).getFileName() == null) {
-			si = chooseFileName(imageType);
+		if (saveAs || fileName == null) {
+			si = chooseFileName(imageType, fileName);
 			if (si == null) return false;
 		}
 		
@@ -917,10 +1143,6 @@ public class MainWindow {
 			m_shell.setCursor(m_display.getSystemCursor(SWT.CURSOR_CROSS));
 			m_views.refresh(false);
 		}
-	}
-	
-	private void setTitle(String filename, int fileType) {
-		m_shell.setText(Picsi.createMsg(Picsi.APP_NAME + " - {0} ({1} {2})", new Object[]{filename, Picsi.imageTypeString(m_views.getFirstImageType()), ImageFiles.fileTypeString(fileType)}));		
 	}
 	
 	private void setIcon(Item item, String resourceName) {

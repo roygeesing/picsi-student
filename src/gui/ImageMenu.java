@@ -44,13 +44,13 @@ public abstract class ImageMenu {
 	}
 	
 	public boolean isEnabled(int index) {
-		return m_menuItems.get(index).m_process.isEnabled(m_views.getFirstImageType());
+		return m_menuItems.get(index).m_process.isEnabled(m_views.getImageType(true));
 	}
 
 	public boolean findAndRun(String text) {
 		for(ImageMenuItem mi: m_menuItems) {
 			if (mi.m_text.equals(text)) {
-				if (mi.m_process.isEnabled(m_views.getFirstImageType())) {
+				if (mi.m_process.isEnabled(m_views.getImageType(true))) {
 					run(mi);
 				}
 				return true;
@@ -62,7 +62,7 @@ public abstract class ImageMenu {
 	private void run(ImageMenuItem item) {
 		ImageData output = null;
 		try {
-			output = item.m_process.run(m_views.getFirstImage(), m_views.getFirstImageType());
+			output = item.m_process.run(m_views.getImage(true), m_views.getImageType(true));
 		} catch(Throwable e) {
 			int last = item.m_text.indexOf('\t');
 			if (last == -1) last = item.m_text.length();

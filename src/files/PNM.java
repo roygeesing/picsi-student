@@ -468,7 +468,9 @@ public class PNM implements IImageFile {
 			}
 		
 			// create image
-			return new ImageData(m_width, m_height, 8, new PaletteData(0xFF, 0xFF, 0xFF), 1, data);
+			RGB[] grayscale = new RGB[256];
+			for(int i = 0; i < grayscale.length; i++) grayscale[i] = new RGB(i, i, i);
+			return new ImageData(m_width, m_height, 8, new PaletteData(grayscale), 1, data);
 			
 		} finally {
 			in.close();
@@ -491,7 +493,9 @@ public class PNM implements IImageFile {
 			}	
 			
 			// create image
-			return new ImageData(m_width, m_height, 8, new PaletteData(0xFF, 0xFF, 0xFF), 1, data);
+			RGB[] grayscale = new RGB[256];
+			for(int i = 0; i < grayscale.length; i++) grayscale[i] = new RGB(i, i, i);
+			return new ImageData(m_width, m_height, 8, new PaletteData(grayscale), 1, data);
 
 		} finally {
 			in.close();

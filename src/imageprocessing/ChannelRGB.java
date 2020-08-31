@@ -1,7 +1,6 @@
 package imageprocessing;
 
 import org.eclipse.swt.graphics.ImageData;
-import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.RGB;
 
 import main.Picsi;
@@ -22,7 +21,7 @@ public class ChannelRGB implements IImageProcessor {
 
 	@Override
 	public boolean isEnabled(int imageType) {
-		return imageType == Picsi.IMAGE_TYPE_RGB;
+		return imageType == Picsi.IMAGE_TYPE_RGB || imageType == Picsi.IMAGE_TYPE_INDEXED;
 	}
 
 	@Override
@@ -31,8 +30,7 @@ public class ChannelRGB implements IImageProcessor {
 	}
 
 	public static ImageData getChannel(ImageData inData, int channel) {
-		// create output image data
-		ImageData outData = new ImageData(inData.width, inData.height, 8, new PaletteData(0xFF, 0xFF, 0xFF));
+		ImageData outData = ImageProcessing.createImage(inData.width, inData.height, Picsi.IMAGE_TYPE_GRAY);
 
 		// parallel image loop
 		Parallel.For(0, inData.height, v -> {
