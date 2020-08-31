@@ -15,6 +15,7 @@ import main.Picsi;
 import files.Document;
 import files.ImageFiles;
 import imageprocessing.BVER;
+import imageprocessing.ColorSpaces;
 import imageprocessing.ImageProcessing;
 import imageprocessing.MAGB;
 
@@ -345,6 +346,7 @@ public class MainWindow {
 		createFileMenu(menuBar);
 		createMagbMenu(menuBar);
 		createBverMenu(menuBar);
+		createColorSpacesMenu(menuBar);
 		createWindowMenu(menuBar);
 		createHelpMenu(menuBar);
 		return menuBar;
@@ -657,12 +659,12 @@ public class MainWindow {
 	private void createMagbMenu(Menu menuBar) {
 		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
 		item.setText("&MAGB");
-		final Menu imageMenu = new Menu(m_shell, SWT.DROP_DOWN);
-		item.setMenu(imageMenu);
-		imageMenu.addListener(SWT.Show,  new Listener() {
+		final Menu magbMenu = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(magbMenu);
+		magbMenu.addListener(SWT.Show,  new Listener() {
 			@Override
 			public void handleEvent(Event e) {
-				MenuItem[] menuItems = imageMenu.getItems();
+				MenuItem[] menuItems = magbMenu.getItems();
 				for (int i=0; i < menuItems.length; i++) {
 					menuItems[i].setEnabled(!m_views.isEmpty() && m_magb.isEnabled(i));
 				}
@@ -670,19 +672,19 @@ public class MainWindow {
 		});
 
 		// user defined image menu items
-		m_magb.createMenuItems(imageMenu);
+		m_magb.createMenuItems(magbMenu);
 	}
 	
 	// BVER menu
 	private void createBverMenu(Menu menuBar) {
 		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
 		item.setText("&BVER");
-		final Menu imageMenu = new Menu(m_shell, SWT.DROP_DOWN);
-		item.setMenu(imageMenu);
-		imageMenu.addListener(SWT.Show,  new Listener() {
+		final Menu bverMenu = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(bverMenu);
+		bverMenu.addListener(SWT.Show,  new Listener() {
 			@Override
 			public void handleEvent(Event e) {
-				MenuItem[] menuItems = imageMenu.getItems();
+				MenuItem[] menuItems = bverMenu.getItems();
 				for (int i=0; i < menuItems.length; i++) {
 					menuItems[i].setEnabled(!m_views.isEmpty() && m_bver.isEnabled(i));
 				}
@@ -690,7 +692,165 @@ public class MainWindow {
 		});
 
 		// user defined image menu items
-		m_bver.createMenuItems(imageMenu);
+		m_bver.createMenuItems(bverMenu);
+	}
+	
+	// Color spaces menu
+	private void createColorSpacesMenu(Menu menuBar) {
+		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
+		item.setText("&Color-Spaces");
+		final Menu colorSpacesMenu = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(colorSpacesMenu);
+		
+		// Color space -> Luminance
+		item = new MenuItem(colorSpacesMenu, SWT.PUSH);
+		item.setText("Luminance");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				m_views.showImageInFirstView(ColorSpaces.grayscale());
+				setTitle("Luminance", SWT.IMAGE_UNDEFINED);
+			}
+		});
+
+		// Color space -> RGB
+		item = new MenuItem(colorSpacesMenu, SWT.CASCADE);
+		item.setText("RGB");
+		final Menu rgb = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(rgb);
+
+		item = new MenuItem(rgb, SWT.PUSH);
+		item.setText("White on Top");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				m_views.showImageInFirstView(ColorSpaces.rgbCube(true));
+			}
+		});
+		item = new MenuItem(rgb, SWT.PUSH);
+		item.setText("Black on Top");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				m_views.showImageInFirstView(ColorSpaces.rgbCube(false));
+			}
+		});
+
+		// Color space -> HSV
+		item = new MenuItem(colorSpacesMenu, SWT.CASCADE);
+		item.setText("HSV");
+		final Menu hsv = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(hsv);
+
+		item = new MenuItem(hsv, SWT.PUSH);
+		item.setText("V = 1");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				m_views.showImageInFirstView(ColorSpaces.hsv(true));
+			}
+		});
+		item = new MenuItem(hsv, SWT.PUSH);
+		item.setText("V decreasing");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				m_views.showImageInFirstView(ColorSpaces.hsv(false));
+			}
+		});
+		item = new MenuItem(hsv, SWT.PUSH);
+		item.setText("Color Wheel");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				m_views.showImageInFirstView(ColorSpaces.hsvWheel());
+			}
+		});
+
+		// Color space -> YUV
+		item = new MenuItem(colorSpacesMenu, SWT.CASCADE);
+		item.setText("YUV");
+		final Menu yuv = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(yuv);
+
+		item = new MenuItem(yuv, SWT.PUSH);
+		item.setText("Y increasing");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				m_views.showImageInFirstView(ColorSpaces.yuv(true));
+			}
+		});
+		item = new MenuItem(yuv, SWT.PUSH);
+		item.setText("Y decreasing");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				m_views.showImageInFirstView(ColorSpaces.yuv(false));
+			}
+		});
+
+		// Color space -> CIE XYZ
+		item = new MenuItem(colorSpacesMenu, SWT.CASCADE);
+		item.setText("CIE XYZ");
+		final Menu xyz = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(xyz);
+
+		item = new MenuItem(xyz, SWT.PUSH);
+		item.setText("Y increasing");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				m_views.showImageInFirstView(ColorSpaces.xyz(true));
+			}
+		});
+		item = new MenuItem(xyz, SWT.PUSH);
+		item.setText("Y decreasing");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				m_views.showImageInFirstView(ColorSpaces.xyz(false));
+			}
+		});
+		item = new MenuItem(xyz, SWT.PUSH);
+		item.setText("sRGB Gamut");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				m_views.showImageInFirstView(ColorSpaces.sRGBGamut());
+			}
+		});
+
+		// Color space -> CIE Lab
+		item = new MenuItem(colorSpacesMenu, SWT.CASCADE);
+		item.setText("CIE L*a*b*");
+		final Menu lab = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(lab);
+
+		item = new MenuItem(lab, SWT.PUSH);
+		item.setText("L increasing");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				m_views.showImageInFirstView(ColorSpaces.lab(true));
+			}
+		});
+		item = new MenuItem(lab, SWT.PUSH);
+		item.setText("L decreasing");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				m_views.showImageInFirstView(ColorSpaces.lab(false));
+			}
+		});
+		item = new MenuItem(lab, SWT.PUSH);
+		item.setText("Color Wheel");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				m_views.showImageInFirstView(ColorSpaces.labWheel());
+			}
+		});
 	}
 	
 	// Window menu
@@ -789,8 +949,8 @@ public class MainWindow {
 
 		// Window -> Show Color Table
 		item = new MenuItem(windowMenu, SWT.CHECK);
-		item.setText("Show &Color Table...\tCtrl+C");
-		item.setAccelerator(SWT.MOD1 + 'C');
+		item.setText("Show Color &Table...\tCtrl+T");
+		item.setAccelerator(SWT.MOD1 + 'T');
 		item.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
