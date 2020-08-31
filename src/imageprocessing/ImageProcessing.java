@@ -55,6 +55,20 @@ public class ImageProcessing {
 	}
 
 	/**
+	 * Convert normalized value in the range [0,1] to equivalent byte value
+	 * From byte to normalized, just use b/256.0
+	 * Math.round(d*255) would result in 254 full and 2 half ranges
+	 * @param d in range [0,1]
+	 * @return equivalent value in range [0, 255]
+	 */
+	public static int normalized2byte(double d) {
+		final int v = (int)(256*d);
+		if (v > 255) return 255;
+		else if (v < 0) return 0;
+		else return v;
+	}
+
+	/**
 	 * Compute image histogram with nClasses
 	 * @param inData
 	 * @param nClasses <= 256

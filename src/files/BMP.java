@@ -3,13 +3,14 @@ import javax.swing.JTextArea;
 
 import main.Picsi;
 
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.RGB;
 
 /**
- * Windows bitmaps (Windows image file type)
+ * Windows bitmaps (Windows image file type) supports BMP, GIF, ICO, JPG, PNG, TIF image file types
  * @author Christoph Stamm
  *
  */
@@ -25,19 +26,16 @@ public class BMP implements IImageFile {
 		// Save the current image to the specified file.
 		ImageLoader loader = new ImageLoader();
 		loader.data = new ImageData[] { imageData };
-		try {
-			loader.save(fileName, fileType);
-		} catch(Exception ex) {
-			if (imageType == Picsi.IMAGE_TYPE_GRAY && imageData.palette.isDirect) {
-				// add grayscale palette
-				RGB[] rgbs = new RGB[256];
-				for(int i=0; i < rgbs.length; i++) rgbs[i] = new RGB(i, i, i);
-				imageData.palette = new PaletteData(rgbs);
-				loader.save(fileName, fileType);
-			} else {
-				throw ex;
-			}
+		
+		if (imageType == Picsi.IMAGE_TYPE_GRAY && imageData.palette.isDirect && 
+				(fileType == SWT.IMAGE_BMP || fileType == SWT.IMAGE_GIF)) {
+			// add grayscale palette, because these file types don't support 8 bit grayscale without palette
+			RGB[] rgbs = new RGB[256];
+			for(int i=0; i < rgbs.length; i++) rgbs[i] = new RGB(i, i, i);
+			imageData.palette = new PaletteData(rgbs);
 		}
+		
+		loader.save(fileName, fileType);
 	}
 
 	@Override

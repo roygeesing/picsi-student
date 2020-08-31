@@ -173,6 +173,15 @@ public class TwinView extends Composite {
 		refresh(false);
 	}
 	
+	public void showImageInFirstView(ImageData imageData) {
+		if (imageData == null) return;
+		
+		m_view1.setImageData(imageData);
+		layout();
+		refresh(false);
+		m_mainWnd.notifyAllMenus();
+	}
+	
 	public void showImageInSecondView(ImageData imageData) {
 		if (imageData == null) return;
 		

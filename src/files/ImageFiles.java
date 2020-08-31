@@ -166,7 +166,7 @@ public class ImageFiles {
 			return imgFile.m_fileTypeString;
 		}
 		
-		return "Unknown type";
+		return "";
 	}
 
 	/**

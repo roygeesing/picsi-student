@@ -17,8 +17,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 
-import main.Picsi;
-
 /**
  * Color Table Dialog
  * @author Christoph Stamm
@@ -31,7 +29,6 @@ public class ColorTableDlg extends Dialog {
 	private Composite m_labelsComp;
 	private Button m_inputBtn, m_outputBtn;
 	private ImageData m_imageData;
-	private int m_imageType;
 
     public ColorTableDlg(Shell parent, int style) {
         super(parent, style);
@@ -124,13 +121,11 @@ public class ColorTableDlg extends Dialog {
 		m_outputBtn.setEnabled(hasOutput);
     	if (m_outputBtn.getSelection()) {
     		m_imageData = views.getSecondImage();
-    		m_imageType = views.getSecondImageType();
     	} else {
     		m_imageData = views.getFirstImage();
-    		m_imageType = views.getFirstImageType();
     	}
     	
-    	if (m_imageType != Picsi.IMAGE_TYPE_RGB) {
+    	if (!m_imageData.palette.isDirect) {
     		Display device = m_shell.getDisplay();
     		RGB colors[] = m_imageData.palette.getRGBs();
     		int nColors = Math.min(MaxColors, colors.length);
@@ -139,8 +134,9 @@ public class ColorTableDlg extends Dialog {
     		// set color of used labels
     		for(int i=0; i < nColors; i++) {
     			Label label = (Label)labels[i];
-    			RGB c = colors[i];
-    			label.setBackground(new Color(device, c.red, c.green, c.blue));
+    			Color c = new Color(device, colors[i]);
+    			label.setBackground(c);
+    			c.dispose();
     		}
     		
     		// set color of unused labels

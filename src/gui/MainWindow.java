@@ -884,7 +884,7 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				MessageBox box = new MessageBox(m_shell, SWT.OK);
 				box.setText("About " + Picsi.APP_NAME);
-				box.setMessage(Picsi.APP_COPYRIGHT + Picsi.APP_VERSION + Picsi.APP_URL);
+				box.setMessage(Picsi.APP_COPYRIGHT + "\n\nVersion: " + Picsi.APP_VERSION + "\n\nWeb: " + Picsi.APP_URL);
 				box.open();
 			}
 		});

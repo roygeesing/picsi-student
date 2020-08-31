@@ -199,8 +199,10 @@ public class HistogramDlg extends Dialog {
 						gc.setBackground(Display.getCurrent().getSystemColor(SWT.COLOR_BLACK));
 						gc.fillRectangle(offset + w/2, h - height, 2, height);
 						// draw color
-						gc.setBackground(rgb2color(colors[0]));
+						Color c = rgb2color(colors[0]);
+						gc.setBackground(c);
 						gc.fillRectangle(offset, h, w, colorHeight);
+						c.dispose();
 					}
 					{
 						// draw bar
@@ -209,8 +211,10 @@ public class HistogramDlg extends Dialog {
 						gc.setBackground(Display.getCurrent().getSystemColor(SWT.COLOR_BLACK));
 						gc.fillRectangle(offset + w + w/2, h - height, 2, height);
 						// draw color
-						gc.setBackground(rgb2color(colors[1]));
+						Color c = rgb2color(colors[1]);
+						gc.setBackground(c);
 						gc.fillRectangle(offset + w, h, w, colorHeight);
+						c.dispose();
 					}
 					break;
 				case Picsi.IMAGE_TYPE_GRAY:
@@ -227,8 +231,10 @@ public class HistogramDlg extends Dialog {
 						gc.setBackground(Display.getCurrent().getSystemColor(SWT.COLOR_BLACK));
 						gc.fillRectangle(x, h - height, w, height);
 						// draw color
-						gc.setBackground(rgb2color(colors[pixel]));
+						Color c = (colors != null) ? rgb2color(colors[pixel]) : gray2color(pixel);
+						gc.setBackground(c);
 						gc.fillRectangle(x, h, w, colorHeight);
+						c.dispose();
 						x += w;
 						pixel++;
 					}
@@ -246,8 +252,10 @@ public class HistogramDlg extends Dialog {
 						gc.setBackground(rgb[m_selectedChannel]);
 						gc.fillRectangle(x, h - height, w, height);
 						// draw color
-						gc.setBackground(new Color(m_shell.getDisplay(), (m_selectedChannel == 0) ? pixel : 0, (m_selectedChannel == 1) ? pixel : 0, (m_selectedChannel == 2) ? pixel : 0));
+						Color c = new Color(m_shell.getDisplay(), (m_selectedChannel == 0) ? pixel : 0, (m_selectedChannel == 1) ? pixel : 0, (m_selectedChannel == 2) ? pixel : 0);
+						gc.setBackground(c);
 						gc.fillRectangle(x, h, w, colorHeight);
+						c.dispose();
 						x += w;
 						pixel++;
 					}
@@ -263,6 +271,7 @@ public class HistogramDlg extends Dialog {
         while (!m_shell.isDisposed()) {
         	if (!display.readAndDispatch()) display.sleep();
         }
+        for(Color c: rgb) c.dispose();
         views.closeHistogram();
         return null;
     }
@@ -318,6 +327,10 @@ public class HistogramDlg extends Dialog {
     }
     
     private Color rgb2color(RGB rgb) {
-    	return new Color(m_shell.getDisplay(), rgb.red, rgb.green, rgb.blue);
+    	return new Color(m_shell.getDisplay(), rgb);
+    }
+
+    private Color gray2color(int p) {
+    	return new Color(m_shell.getDisplay(), p, p, p);
     }
 }
