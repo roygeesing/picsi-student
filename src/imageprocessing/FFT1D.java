@@ -10,7 +10,7 @@ import utils.Complex;
 public class FFT1D {
 	/**
 	 * Computes the FFT of x[], assuming its length is a power of 2
-	 * Difference to DFT1D: for m > N/2 subtraction is used while DFT always term adds
+	 * Difference to DFT1D: for m > N/2 subtraction is used while DFT always adds terms
 	 * @param x input of size 2^k
 	 * @return complex Fourier spectrum 
 	 */

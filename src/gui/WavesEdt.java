@@ -9,6 +9,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.*;
 
 import imageprocessing.FFT;
+//import imageprocessing.HistogramEqualization;
 import utils.FrequencyDomain;
 import utils.Parallel;
 
@@ -490,15 +491,13 @@ public class WavesEdt extends Dialog {
 	    	views.close(false); 
     		break;
     	case 2: 
-    		outData = FFT.getPowerSpectrum(m_fd);
-			if (m_shiftedBtn.getSelection()) FFT.swapQuadrants(outData);
+    		outData = FFT.getPowerSpectrum(m_shiftedBtn.getSelection() ? m_fd.swapQuadrants() : m_fd);
 			m_disableUpdate = true;
 			views.showImageInSecondView(outData);
 			m_disableUpdate = false;
 			break;
     	case 3:
-			outData = FFT.getPhaseSpectrum(m_fd);
-			if (m_shiftedBtn.getSelection()) FFT.swapQuadrants(outData);
+			outData = FFT.getPhaseSpectrum(m_shiftedBtn.getSelection() ? m_fd.swapQuadrants() : m_fd);
 			m_disableUpdate = true;
 			views.showImageInSecondView(outData);
 			m_disableUpdate = false;
