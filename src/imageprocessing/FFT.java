@@ -19,7 +19,7 @@ import utils.Parallel;
  *
  */
 public class FFT implements IImageProcessor {
-	final static double FilterFactor = 20; // 3.8 is a good value
+	final static double FilterFactor = 3.8; // 3.8 is a good value
 	
 	@Override
 	public boolean isEnabled(int imageType) {
@@ -42,7 +42,7 @@ public class FFT implements IImageProcessor {
 			f2 = OptionPane.showOptionDialog("Fourier Transform Output", 
 					SWT.ICON_INFORMATION, output, 0);
 		} else {
-			output = new Object[]{ "Blurred Image", "Inverse Filtered Image", "Inverse Filtered Image (integral Pixels)" };
+			output = new Object[]{ "Blurred Image", "Deconvoluted Image", "Deconvoluted Integer Image", "Deconvoluted Integer Image with Lowpass" };
 			f2 = OptionPane.showOptionDialog("Inverse Filtering Output", 
 					SWT.ICON_INFORMATION, output, 0);
 		}
@@ -272,7 +272,7 @@ public class FFT implements IImageProcessor {
 	/**
 	 * Experiment: inverse image filtering
 	 * @param inData
-	 * @param option (0: blurred image, 1: inverse filtered, 2: inverse filtered and integral)
+	 * @param option (0: blurred image, 1: deconvoluted, 2: deconvoluted integral parts, 3: lowpass of deconvoluted integral parts)
 	 * @return output image
 	 */
 	public static ImageData fft2DInverseFiltering(ImageData inData, int option) {
@@ -294,11 +294,12 @@ public class FFT implements IImageProcessor {
 		FrequencyDomain fdf = fft2D(filter, fsize*fsize);
 		FrequencyDomain fdi = fft2D(inData);
 		
-		fdi.multiply(fdf);
+		// convolve inData with filter
+		FrequencyDomain fdif = fdi.multiply(fdf);
 		
 		// inverse fft 
-		ImageData blurredData = ifft2D(fdi);
-
+		ImageData blurredData = ifft2D(fdif); // image with integer values
+				
 		switch(option) {
 		default:
 		case 0:
@@ -306,21 +307,40 @@ public class FFT implements IImageProcessor {
 			return blurredData;
 		case 1:
 			// inverse filtering using non-integral data
-			fdi.divide(fdf);
-			
-			// inverse fft 
-			return ifft2D(fdi);
+			return ifft2D(fdif.divide(fdf));			
 		case 2:
+			// inverse filtering using integral blurred data
+			return ifft2D(fft2D(blurredData).divide(fdf));
+		case 3:
+		{
 			// using integral blurred data
-			FrequencyDomain fdi2 = fft2D(blurredData);
-			
-			// inverse filtering
-			fdi2.divide(fdf);
-			
-			// inverse fft 
-			return ifft2D(fdi2);
-		}
+			FrequencyDomain fdif2 = fft2D(blurredData);
 
+			final int width = fdif.getSpectrumWidth();
+        	final int height = fdif.getSpectrumHeight();
+			final int r = Math.min(width, height)/30;
+    		final int hD2 = height/2;
+    		final int wD2 = width/2;
+
+    		// lowpass filter: TODO implement and improve in FrequencyDomain
+        	Parallel.For(-hD2, height - hD2, v2 -> {
+        		final int v = (v2 < 0) ? v2 + height : v2;
+        		
+    			for (int u2=-wD2; u2 < width - wD2; u2++) {
+    				final int u = (u2 < 0) ? u2 + width : u2;
+            		final double dist = Math.hypot(u2, v2);
+            		
+            		if ((u != 0 || v != 0) && dist > r) {
+            			fdif2.setValue(u, v, 0, 0);
+            		}
+    				
+    			}
+      		});
+        	
+			// inverse filtering using non-integral data
+			return ifft2D(fdif2.divide(fdf));
+		}
+		}
 	}
 	
 	/**

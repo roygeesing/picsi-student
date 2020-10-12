@@ -1062,15 +1062,15 @@ public class MainWindow {
 			}
 		});
 
-		// Window -> Show Waves Editor
+		// Window -> Show Frequency Editor
 		item = new MenuItem(windowMenu, SWT.CHECK);
-		item.setText("Show Wa&ves...\tCtrl+V");
-		item.setAccelerator(SWT.MOD1 + 'V');
+		item.setText("Show &Frequencies...\tCtrl+F");
+		item.setAccelerator(SWT.MOD1 + 'F');
 		item.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
 				if (!m_views.isEmpty() && m_views.getImageType(true) == Picsi.IMAGE_TYPE_GRAY) {
-					m_views.toggleWaves();
+					m_views.toggleFrequencies();
 				}
 			}
 		});

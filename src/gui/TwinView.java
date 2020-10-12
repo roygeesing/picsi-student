@@ -21,7 +21,7 @@ public class TwinView extends Composite {
 	private ColorTableDlg m_colorTable;
 	private HistogramDlg m_histogram;
 	private LineViewer m_lineViewer;
-	private WavesEdt m_wavesEditor;
+	private FrequencyEdt m_frequenciesEditor;
 	private boolean m_autoZoom = true;
 	private boolean m_synchronized = false;
 	
@@ -46,7 +46,7 @@ public class TwinView extends Composite {
 		if (m_view2 != null) m_view2.setImageData(null);
 		closeColorTable();
 		closeHistogram();
-		closeWaves();
+		closeFrequencies();
 	}
 	
 	public boolean isEmpty() {
@@ -87,9 +87,9 @@ public class TwinView extends Composite {
 				m_lineViewer.close();
 				m_lineViewer = null;
 			}
-			if (m_wavesEditor != null) {
-				m_wavesEditor.close();
-				m_wavesEditor = null;
+			if (m_frequenciesEditor != null) {
+				m_frequenciesEditor.close();
+				m_frequenciesEditor = null;
 			}
 		} else if (m_view2 != null) {
 			if (m_colorTable != null) {
@@ -132,7 +132,7 @@ public class TwinView extends Composite {
 	}
 	
 	public boolean hasWaves() {
-		return m_wavesEditor != null;
+		return m_frequenciesEditor != null;
 	}
 
 	public boolean hasSecondView() {
@@ -226,11 +226,11 @@ public class TwinView extends Composite {
 			if (m_colorTable != null) m_colorTable.update(hasSecondView(), this); 
 			if (m_histogram != null) m_histogram.update(hasSecondView(), this); 
 			if (m_lineViewer != null) m_lineViewer.update(hasSecondView(), this); 
-			if (m_wavesEditor != null) {
+			if (m_frequenciesEditor != null) {
 		    	Shell shell = getShell();
 		    	
 				shell.setCursor(shell.getDisplay().getSystemCursor(SWT.CURSOR_WAIT));   	
-				m_wavesEditor.update(this);
+				m_frequenciesEditor.update(this);
 		    	shell.setCursor(shell.getDisplay().getSystemCursor(SWT.CURSOR_CROSS));			
 			}
 		}
@@ -361,25 +361,25 @@ public class TwinView extends Composite {
 		}		
 	}
 
-	public void toggleWaves() {
-		if (m_wavesEditor != null) {
+	public void toggleFrequencies() {
+		if (m_frequenciesEditor != null) {
 			// close waves
-			m_wavesEditor.close();
-			m_wavesEditor = null;
+			m_frequenciesEditor.close();
+			m_frequenciesEditor = null;
 		} else {
 			Shell shell = getShell();
 			// open waves
-			m_wavesEditor = new WavesEdt(getShell());
+			m_frequenciesEditor = new FrequencyEdt(getShell());
 			shell.setCursor(shell.getDisplay().getSystemCursor(SWT.CURSOR_WAIT));   	
-			m_wavesEditor.open(this);
+			m_frequenciesEditor.open(this);
 	    	if (!shell.isDisposed()) shell.setCursor(shell.getDisplay().getSystemCursor(SWT.CURSOR_CROSS));			
 		}
 	}
 	
-	public void closeWaves() {
-		if (m_wavesEditor != null) {
-			m_wavesEditor.close();
-			m_wavesEditor = null;
+	public void closeFrequencies() {
+		if (m_frequenciesEditor != null) {
+			m_frequenciesEditor.close();
+			m_frequenciesEditor = null;
 		}		
 	}
 }

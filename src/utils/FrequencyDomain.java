@@ -66,6 +66,20 @@ public class FrequencyDomain implements Cloneable {
 	private FrequencyDomain() {	
 	}
 	
+	private FrequencyDomain(FrequencyDomain fd, boolean dummy) {
+		m_width = fd.m_width;
+		m_height = fd.m_height;
+		m_depth = fd.m_depth;
+		m_palette = fd.m_palette;
+		m_powerScale = fd.m_powerScale;
+		m_min = fd.m_min;
+		m_g = new Complex[fd.m_g.length][];	
+		
+		Parallel.For(0, m_g.length, v -> {
+			m_g[v] = new Complex[fd.m_g[v].length];
+		});
+	}
+	
 	/**
 	 * Returns amplitude at given position
 	 * @param u x-coordinate
@@ -100,6 +114,30 @@ public class FrequencyDomain implements Cloneable {
 		m_g[v][u] = new Complex(amp*Math.cos(phi), amp*Math.sin(phi));
 	}
 	
+	/**
+	 * Return power spectral density
+	 * @return
+	 */
+	public double meanPower() {
+		double[] sum = new double[1];
+		
+		Parallel.For(0, m_g.length, 
+			// creator
+			() -> new double[1],
+			// loop body
+			(v, s) -> {
+				for (int u = 0; u < m_g[v].length; u++) {
+					s[0] += m_g[v][u].abs2();
+				}
+			},
+			// reducer
+			s -> {
+				sum[0] += s[0];
+			}
+		);
+		return sum[0]/getSpectrumWidth()/getSpectrumHeight();
+	}
+
 	@Override
 	public FrequencyDomain clone() {
 		return new FrequencyDomain(this);
@@ -166,27 +204,33 @@ public class FrequencyDomain implements Cloneable {
 		return fd;
 	}
 	
-	public void multiply(double d) {
+	public FrequencyDomain multiply(double d) {
+		FrequencyDomain fd = new FrequencyDomain(this, true);
+		
 		Parallel.For(0, m_g.length, v -> {
 			for(int u = 0; u < m_g[v].length; u++) {
-				m_g[v][u].mul(d);
+				fd.m_g[v][u] = m_g[v][u].mul(d);
 			}
 		});
+		return fd;
 	}
 	
-	public void multiply(FrequencyDomain fd2) {
+	public FrequencyDomain multiply(FrequencyDomain fd2) {
 		assert m_g.length == fd2.m_g.length;
+		FrequencyDomain fd = new FrequencyDomain(this, true);
 		
 		Parallel.For(0, m_g.length, v -> {
 			assert m_g[v].length == fd2.m_g[v].length;
 			for(int u = 0; u < m_g[v].length; u++) {
-				m_g[v][u].mul(fd2.m_g[v][u]);
+				fd.m_g[v][u] = m_g[v][u].mul(fd2.m_g[v][u]);
 			}
 		});
+		return fd;
 	}
 
-	public void divide(FrequencyDomain fd2) {
+	public FrequencyDomain divide(FrequencyDomain fd2) {
 		assert m_g.length == fd2.m_g.length;
+		FrequencyDomain fd = new FrequencyDomain(this, true);
 		
 		Parallel.For(0, m_g.length, v -> {
 			assert m_g[v].length == fd2.m_g[v].length;
@@ -196,12 +240,13 @@ public class FrequencyDomain implements Cloneable {
 					m_g[v][u].m_re = 0;
 					m_g[v][u].m_im = 0;
 				} else {
-					m_g[v][u].div(fd2.m_g[v][u]);
+					fd.m_g[v][u] = m_g[v][u].div(fd2.m_g[v][u]);
 				}
 			}
 		});
+		return fd;
 	}
-	
+		
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof FrequencyDomain) {
