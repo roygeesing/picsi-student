@@ -32,6 +32,20 @@ public class FrequencyDomain implements Cloneable {
 	}
 	
 	/**
+	 * @param inData input image
+	 * @param width output width
+	 * @param height output height
+	 * @param g Fourier coefficients
+	 */
+	public FrequencyDomain(ImageData inData, int width, int height, Complex[][] g) {
+		m_width = width;
+		m_height = height;
+		m_depth = inData.depth;
+		m_palette = inData.palette;
+		m_g = g;
+	}
+
+	/**
 	 * Copy constructor
 	 * @param fd
 	 */
@@ -43,9 +57,27 @@ public class FrequencyDomain implements Cloneable {
 		m_powerScale = fd.m_powerScale;
 		m_min = fd.m_min;
 		m_g = new Complex[fd.m_g.length][];
-		for(int i=0; i < m_g.length; i++) {
-			m_g[i] = Arrays.copyOf(fd.m_g[i], fd.m_g[i].length);
-		}
+		
+		Parallel.For(0, m_g.length, v -> {
+			m_g[v] = Arrays.copyOf(fd.m_g[v], fd.m_g[v].length);
+		});
+	}
+	
+	private FrequencyDomain() {	
+	}
+	
+	private FrequencyDomain(FrequencyDomain fd, boolean dummy) {
+		m_width = fd.m_width;
+		m_height = fd.m_height;
+		m_depth = fd.m_depth;
+		m_palette = fd.m_palette;
+		m_powerScale = fd.m_powerScale;
+		m_min = fd.m_min;
+		m_g = new Complex[fd.m_g.length][];	
+		
+		Parallel.For(0, m_g.length, v -> {
+			m_g[v] = new Complex[fd.m_g[v].length];
+		});
 	}
 	
 	/**
@@ -82,34 +114,125 @@ public class FrequencyDomain implements Cloneable {
 		m_g[v][u] = new Complex(amp*Math.cos(phi), amp*Math.sin(phi));
 	}
 	
+	/**
+	 * Return power spectral density
+	 * @return
+	 */
+	public double meanPower() {
+		double[] sum = new double[1];
+		
+		Parallel.For(0, m_g.length, 
+			// creator
+			() -> new double[1],
+			// loop body
+			(v, s) -> {
+				for (int u = 0; u < m_g[v].length; u++) {
+					s[0] += m_g[v][u].abs2();
+				}
+			},
+			// reducer
+			s -> {
+				sum[0] += s[0];
+			}
+		);
+		return sum[0]/getSpectrumWidth()/getSpectrumHeight();
+	}
+
 	@Override
 	public FrequencyDomain clone() {
 		return new FrequencyDomain(this);
 	}
 
-	public void multiply(double d) {
-		for(int v = 0; v < m_g.length; v++) {
-			for(int u = 0; u < m_g[v].length; u++) {
-				m_g[v][u].mul(d);
+	/**	
+	 * Swap quadrants B and D and A and C  
+	 * so the power spectrum origin is at the center.
+	<pre>
+	    B A
+	    C D
+	</pre>
+	 * B.w = ceil(w/2) = w1
+	 * B.h = ceil(h/2) = h1
+	 * D.w = floor(w/2) = w2
+	 * D.h = floor(h/2) = h2
+	 * @return specturm with swapped quadrants
+	 */
+	public FrequencyDomain swapQuadrants() {
+		final int w = getSpectrumWidth();
+		final int h = getSpectrumHeight();
+		FrequencyDomain fd = new FrequencyDomain();
+		fd.m_width = m_width;
+		fd.m_height = m_height;
+		fd.m_depth = m_depth;
+		fd.m_palette = m_palette;
+		fd.m_powerScale = m_powerScale;
+		fd.m_min = m_min;
+		fd.m_g = new Complex[h][w];
+		
+		final int w2 = w/2,  w1 = w - w2;
+		final int h2 = h/2, h1 = h - h2;
+
+		Parallel.For(0, h2, v -> {
+			final int h1v = h1 + v;
+			final int h2v = h2 + v;
+			
+			for(int u = 0; u < w2; u++) {
+				fd.m_g[v][u] = m_g[h1v][w1 + u];
+				fd.m_g[v][w2 + u] = m_g[h1v][u];
+				fd.m_g[h2v][u] = m_g[v][w1 + u];
+				fd.m_g[h2v][w2 + u] = m_g[v][u];
+			}
+		});
+		if (h1 != h2) {
+			final int h22 = h2 << 1;
+			for(int u = 0; u < w2; u++) {
+				fd.m_g[h22][u] = m_g[h2][w1 + u];
+				fd.m_g[h22][w2 + u] = m_g[h2][u];
 			}
 		}
+		if (w1 != w2) {
+			final int w22 = w2 << 1;
+			for(int v = 0; v < h2; v++) {
+				fd.m_g[v][w22] = m_g[h1 + v][w2];
+				fd.m_g[h2 + v][w22] = m_g[v][w2];
+			}
+			if (h1 != h2) {
+				final int h22 = h2 << 1;
+				fd.m_g[h22][w22] = m_g[h2][w2];
+			}
+		}
+		
+		return fd;
 	}
 	
-	public void multiply(FrequencyDomain fd2) {
-		assert m_g.length == fd2.m_g.length;
+	public FrequencyDomain multiply(double d) {
+		FrequencyDomain fd = new FrequencyDomain(this, true);
 		
-		for(int v = 0; v < m_g.length; v++) {
+		Parallel.For(0, m_g.length, v -> {
+			for(int u = 0; u < m_g[v].length; u++) {
+				fd.m_g[v][u] = m_g[v][u].mul(d);
+			}
+		});
+		return fd;
+	}
+	
+	public FrequencyDomain multiply(FrequencyDomain fd2) {
+		assert m_g.length == fd2.m_g.length;
+		FrequencyDomain fd = new FrequencyDomain(this, true);
+		
+		Parallel.For(0, m_g.length, v -> {
 			assert m_g[v].length == fd2.m_g[v].length;
 			for(int u = 0; u < m_g[v].length; u++) {
-				m_g[v][u].mul(fd2.m_g[v][u]);
+				fd.m_g[v][u] = m_g[v][u].mul(fd2.m_g[v][u]);
 			}
-		}
+		});
+		return fd;
 	}
 
-	public void divide(FrequencyDomain fd2) {
+	public FrequencyDomain divide(FrequencyDomain fd2) {
 		assert m_g.length == fd2.m_g.length;
+		FrequencyDomain fd = new FrequencyDomain(this, true);
 		
-		for(int v = 0; v < m_g.length; v++) {
+		Parallel.For(0, m_g.length, v -> {
 			assert m_g[v].length == fd2.m_g[v].length;
 			for(int u = 0; u < m_g[v].length; u++) {
 				if (fd2.m_g[v][u].abs2() == 0) {
@@ -117,12 +240,13 @@ public class FrequencyDomain implements Cloneable {
 					m_g[v][u].m_re = 0;
 					m_g[v][u].m_im = 0;
 				} else {
-					m_g[v][u].div(fd2.m_g[v][u]);
+					fd.m_g[v][u] = m_g[v][u].div(fd2.m_g[v][u]);
 				}
 			}
-		}
+		});
+		return fd;
 	}
-	
+		
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof FrequencyDomain) {

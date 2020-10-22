@@ -2,6 +2,8 @@ package imageprocessing;
 
 import main.Picsi;
 
+import java.util.Arrays;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.ImageData;
 
@@ -17,7 +19,7 @@ import utils.Parallel;
  *
  */
 public class FFT implements IImageProcessor {
-	final static double FilterFactor = 20; // 3.8 is a good value
+	final static double FilterFactor = 3.8; // 3.8 is a good value
 	
 	@Override
 	public boolean isEnabled(int imageType) {
@@ -40,7 +42,7 @@ public class FFT implements IImageProcessor {
 			f2 = OptionPane.showOptionDialog("Fourier Transform Output", 
 					SWT.ICON_INFORMATION, output, 0);
 		} else {
-			output = new Object[]{ "Blurred Image", "Inverse Filtered Image", "Inverse Filtered Image (integral Pixels)" };
+			output = new Object[]{ "Blurred Image", "Deconvoluted Image", "Deconvoluted Integer Image", "Deconvoluted Integer Image with Lowpass" };
 			f2 = OptionPane.showOptionDialog("Inverse Filtering Output", 
 					SWT.ICON_INFORMATION, output, 0);
 		}
@@ -54,12 +56,10 @@ public class FFT implements IImageProcessor {
 			fd = fft2D(inData);
 			switch(f2) {
 			case 0:
-				outData = getPowerSpectrum(fd);
-				swapQuadrants(outData);
+				outData = getPowerSpectrum(fd.swapQuadrants());
 				break;
 			case 1:
-				outData = getPhaseSpectrum(fd);
-				swapQuadrants(outData);
+				outData = getPhaseSpectrum(fd.swapQuadrants());
 				break;
 			case 2:
 				outData = ifft2D(fd);
@@ -70,12 +70,10 @@ public class FFT implements IImageProcessor {
 			fd = fht2D(inData);
 			switch(f2) {
 			case 0:
-				outData = getPowerSpectrum(fd);
-				swapQuadrants(outData);
+				outData = getPowerSpectrum(fd.swapQuadrants());
 				break;
 			case 1:
-				outData = getPhaseSpectrum(fd);
-				swapQuadrants(outData);
+				outData = getPhaseSpectrum(fd.swapQuadrants());
 				break;
 			case 2:
 				outData = ifht2D(fd);
@@ -113,13 +111,36 @@ public class FFT implements IImageProcessor {
 	 * @return frequency domain object
 	 */
 	public static FrequencyDomain fft2D(ImageData inData, double norm) {
-		int l = inData.width - 1;
+		return fft2D(inData, inData.width, inData.height, norm);
+	}
+	
+	/**
+	 * 2D Fast Fourier Transform (forward transform)
+	 * @param inData input data
+	 * @param width output width
+	 * @param height output height
+	 * @return frequency domain object
+	 */
+	public static FrequencyDomain fft2D(ImageData inData, int width, int height) {
+		return fft2D(inData, width, height, 1);
+	}
+	
+	/**
+	 * 2D Fast Fourier Transform (forward transform)
+	 * @param inData input data
+	 * @param width output width
+	 * @param height output height
+	 * @param norm
+	 * @return frequency domain object
+	 */
+	public static FrequencyDomain fft2D(ImageData inData, int width, int height, double norm) {
+		int l = width - 1;
 		int w = 1;
 		while(l > 0) {
 			l >>= 1;
 			w <<= 1;
 		}
-		l = inData.height - 1;
+		l = height - 1;
 		int h = 1;
 		while(l > 0) {
 			l >>= 1;
@@ -139,29 +160,30 @@ public class FFT implements IImageProcessor {
 		int rowPos = 0;
 		for (int v=0; v < h; v++) {
 			if (v < inData.height) {
-				for (int u=0; u < inData.width; u++) {
-					row[u].m_re = (0xFF & inData.data[rowPos + u])/norm;
-				}
+				final int rP = rowPos;
+				Parallel.For(0, Math.min(w, inData.width), u -> {
+					row[u].m_re = (0xFF & inData.data[rP + u])/norm;
+				});
+				G[v] = FFT1D.fft(row);
 				rowPos += inData.bytesPerLine;
-			} else if (v == inData.height) {
-				for (int u=0; u < inData.width; u++) {
-					row[u].m_re = 0;
-				}
+			} else {
+				G[v] = new Complex[w];
+				Arrays.fill(G[v], new Complex());
 			}
-			G[v] = FFT1D.fft(row);
 		}
 		
 		// forward transform columns
 		for (int u=0; u < w; u++) {
-			for (int v=0; v < h; v++) {
-				col[v] = G[v][u];
-			}
+			final int u_ = u;
+			Parallel.For(0, h, v -> {
+				col[v] = G[v][u_];
+			});
 			Complex[] Gcol = FFT1D.fft(col);
-			for (int v=0; v < h; v++) {
-				G[v][u] = Gcol[v];
-			}	
+			Parallel.For(0, h, v -> {
+				G[v][u_] = Gcol[v];
+			});
 		}
-		return new FrequencyDomain(inData, G);
+		return new FrequencyDomain(inData, width, height, G);
 	}
 	
 	/**
@@ -172,29 +194,57 @@ public class FFT implements IImageProcessor {
 	public static ImageData ifft2D(FrequencyDomain fdOrig) {
 		FrequencyDomain fd = fdOrig.clone();
 		ImageData outData = new ImageData(fd.m_width, fd.m_height, fd.m_depth, fd.m_palette);
-		Complex[] col = new Complex[fd.m_g.length];
+		Complex[] col = new Complex[fd.getSpectrumHeight()];
 	
 		// inverse transform rows
-		for (int v=0; v < fd.m_g.length; v++) {
+		for (int v=0; v < fd.getSpectrumHeight(); v++) {
 			fd.m_g[v] = FFT1D.ifft(fd.m_g[v]);
 		}
 		
 		// inverse transform columns
-		int rowPos = 0;
-		for (int u=0; u < outData.width; u++) {
-			for (int v=0; v < fd.m_g.length; v++) {
-				col[v] = fd.m_g[v][u];
-			}
+		for (int u=0; u < Math.min(outData.width, fd.getSpectrumWidth()); u++) {
+			final int u_ = u;
+			Parallel.For(0, fd.getSpectrumHeight(), v -> {
+				col[v] = fd.m_g[v][u_];
+			});
 			Complex[] Gcol = FFT1D.ifft(col);
-			rowPos = 0;
-			for (int v=0; v < outData.height; v++) {
-				outData.data[u + rowPos] = (byte)ImageProcessing.clamp8(Gcol[v].m_re);
-				rowPos += outData.bytesPerLine;
-			}	
+			Parallel.For(0, Math.min(outData.height, fd.getSpectrumHeight()), v -> {
+				outData.data[u_ + v*outData.bytesPerLine] = (byte)ImageProcessing.clamp8(Gcol[v].m_re);
+			});
 		}
 		return outData;
 	}
 
+	/**
+	 * 2D Inverse Fast Fourier Transform
+	 * @param fd frequency domain object
+	 * @return output real part
+	 */
+	public static double[][] ifft2Dreal(FrequencyDomain fdOrig) {
+		FrequencyDomain fd = fdOrig.clone();
+		double[][] outData = new double[fd.m_height][fd.m_width];
+		Complex[] col = new Complex[fd.getSpectrumHeight()];
+	
+		// inverse transform rows
+		for (int v=0; v < fd.getSpectrumHeight(); v++) {
+			fd.m_g[v] = FFT1D.ifft(fd.m_g[v]);
+		}
+		
+		// inverse transform columns
+		for (int u=0; u < Math.min(fd.m_width, fd.getSpectrumWidth()); u++) {
+			final int u_ = u;
+			Parallel.For(0, fd.getSpectrumHeight(), v -> {
+				col[v] = fd.m_g[v][u_];
+			});
+			Complex[] Gcol = FFT1D.ifft(col);
+			Parallel.For(0, Math.min(fd.m_height, fd.getSpectrumHeight()), v -> {
+				outData[v][u_] = Gcol[v].m_re;
+			});
+		}
+		return outData;
+		
+	}
+	
 	/**
 	 * 2D Fast Hartley Transform (forward transform)
 	 * @param inData input data
@@ -222,7 +272,7 @@ public class FFT implements IImageProcessor {
 	/**
 	 * Experiment: inverse image filtering
 	 * @param inData
-	 * @param option (0: blurred image, 1: inverse filtered, 2: inverse filtered and integral)
+	 * @param option (0: blurred image, 1: deconvoluted, 2: deconvoluted integral parts, 3: lowpass of deconvoluted integral parts)
 	 * @return output image
 	 */
 	public static ImageData fft2DInverseFiltering(ImageData inData, int option) {
@@ -244,11 +294,12 @@ public class FFT implements IImageProcessor {
 		FrequencyDomain fdf = fft2D(filter, fsize*fsize);
 		FrequencyDomain fdi = fft2D(inData);
 		
-		fdi.multiply(fdf);
+		// convolve inData with filter
+		FrequencyDomain fdif = fdi.multiply(fdf);
 		
 		// inverse fft 
-		ImageData blurredData = ifft2D(fdi);
-
+		ImageData blurredData = ifft2D(fdif); // image with integer values
+				
 		switch(option) {
 		default:
 		case 0:
@@ -256,21 +307,40 @@ public class FFT implements IImageProcessor {
 			return blurredData;
 		case 1:
 			// inverse filtering using non-integral data
-			fdi.divide(fdf);
-			
-			// inverse fft 
-			return ifft2D(fdi);
+			return ifft2D(fdif.divide(fdf));			
 		case 2:
+			// inverse filtering using integral blurred data
+			return ifft2D(fft2D(blurredData).divide(fdf));
+		case 3:
+		{
 			// using integral blurred data
-			FrequencyDomain fdi2 = fft2D(blurredData);
-			
-			// inverse filtering
-			fdi2.divide(fdf);
-			
-			// inverse fft 
-			return ifft2D(fdi2);
-		}
+			FrequencyDomain fdif2 = fft2D(blurredData);
 
+			final int width = fdif.getSpectrumWidth();
+        	final int height = fdif.getSpectrumHeight();
+			final int r = Math.min(width, height)/30;
+    		final int hD2 = height/2;
+    		final int wD2 = width/2;
+
+    		// lowpass filter: TODO implement and improve in FrequencyDomain
+        	Parallel.For(-hD2, height - hD2, v2 -> {
+        		final int v = (v2 < 0) ? v2 + height : v2;
+        		
+    			for (int u2=-wD2; u2 < width - wD2; u2++) {
+    				final int u = (u2 < 0) ? u2 + width : u2;
+            		final double dist = Math.hypot(u2, v2);
+            		
+            		if ((u != 0 || v != 0) && dist > r) {
+            			fdif2.setValue(u, v, 0, 0);
+            		}
+    				
+    			}
+      		});
+        	
+			// inverse filtering using non-integral data
+			return ifft2D(fdif2.divide(fdf));
+		}
+		}
 	}
 	
 	/**

@@ -53,7 +53,7 @@ public class Complex {
 	 * @param c
 	 * @return this + c
 	 */
-	public Complex plus(Complex c) {
+	public Complex add(Complex c) {
 		return new Complex(m_re + c.m_re, m_im + c.m_im);
 	}
 	
@@ -62,7 +62,7 @@ public class Complex {
 	 * @param c
 	 * @return this - c
 	 */
-	public Complex minus(Complex c) {
+	public Complex sub(Complex c) {
 		return new Complex(m_re - c.m_re, m_im - c.m_im);		
 	}
 	
@@ -71,7 +71,7 @@ public class Complex {
 	 * @param s
 	 * @return s*this
 	 */
-	public Complex prod(double s) {
+	public Complex mul(double s) {
 		return new Complex(s*m_re, s*m_im);		
 	}
 	
@@ -80,8 +80,18 @@ public class Complex {
 	 * @param c
 	 * @return this*c
 	 */
-	public Complex prod(Complex c) {
+	public Complex mul(Complex c) {
 		return new Complex(m_re*c.m_re - m_im*c.m_im, m_re*c.m_im + m_im*c.m_re);
+	}
+	
+	/**
+	 * Complex division
+	 * @param c
+	 * @return this/c
+	 */
+	public Complex div(Complex c) {
+		final double den = c.abs2();
+		return new Complex((m_re*c.m_re + m_im*c.m_im)/den, (m_im*c.m_re - m_re*c.m_im)/den);
 	}
 	
 	/**
@@ -96,7 +106,7 @@ public class Complex {
 	 * Complex multiplication: this := this*c
 	 * @param c
 	 */
-	public void mul(Complex c) {
+	public void multiply(Complex c) {
 		double re = m_re*c.m_re - m_im*c.m_im;
 		double im = m_re*c.m_im + m_im*c.m_re;
 		m_re = re;
@@ -107,7 +117,7 @@ public class Complex {
 	 * Complex scaling: this := s*this
 	 * @param s
 	 */
-	public void mul(double s) {
+	public void multiply(double s) {
 		m_re *= s;
 		m_im *= s;
 	}
@@ -116,10 +126,10 @@ public class Complex {
 	 * Complex division: this := this/c
 	 * @param c
 	 */
-	public void div(Complex c) {
-		double den = c.abs2();
-		double re = m_re*c.m_re + m_im*c.m_im;
-		double im = m_im*c.m_re - m_re*c.m_im;
+	public void divide(Complex c) {
+		final double den = c.abs2();
+		final double re = m_re*c.m_re + m_im*c.m_im;
+		final double im = m_im*c.m_re - m_re*c.m_im;
 		m_re = re/den;
 		m_im = im/den;
 	}
@@ -128,7 +138,7 @@ public class Complex {
 	 * Complex reciprocal scaling: this := this/s
 	 * @param s
 	 */
-	public void div(double s) {
+	public void divide(double s) {
 		m_re /= s;
 		m_im /= s;
 	}

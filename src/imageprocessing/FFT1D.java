@@ -10,7 +10,7 @@ import utils.Complex;
 public class FFT1D {
 	/**
 	 * Computes the FFT of x[], assuming its length is a power of 2
-	 * Difference to DFT1D: for m > N/2 subtraction is used while DFT always term adds
+	 * Difference to DFT1D: for m > N/2 subtraction is used while DFT always adds terms
 	 * @param x input of size 2^k
 	 * @return complex Fourier spectrum 
 	 */
@@ -43,8 +43,8 @@ public class FFT1D {
 	        for (int k = 0; k < N/2; k++) {
 	            final double kth = -2*k*Math.PI/N;
 	            Complex wk = new Complex(Math.cos(kth), Math.sin(kth));
-	            y[k]       = q[k].plus(wk.prod(r[k]));
-	            y[k + N/2] = q[k].minus(wk.prod(r[k]));
+	            y[k]       = q[k].add(wk.mul(r[k]));
+	            y[k + N/2] = q[k].sub(wk.mul(r[k]));
 	        }
 	        return y;
         }
@@ -69,10 +69,9 @@ public class FFT1D {
 
         // take conjugate again
         // divide by N
-        double s = 1.0/N;
         for (int i = 0; i < N; i++) {
             y[i].conj();
-            y[i].mul(s);
+            y[i].divide(N);
         }
 
         return y;

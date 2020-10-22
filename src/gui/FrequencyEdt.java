@@ -23,7 +23,7 @@ import org.eclipse.swt.layout.RowData;
  * @author Christoph Stamm
  *
  */
-public class WavesEdt extends Dialog {
+public class FrequencyEdt extends Dialog {
 	private static final int V = 0;
 	private static final int U = 1;
 	private static final int Amp = 2;
@@ -40,11 +40,11 @@ public class WavesEdt extends Dialog {
 	private ImageData m_transformed;
 	private boolean m_disableUpdate = false;
 	
-	public WavesEdt(Shell parent) {
+	public FrequencyEdt(Shell parent) {
 		super(parent);
 	}
 
-	public WavesEdt(Shell parent, int style) {
+	public FrequencyEdt(Shell parent, int style) {
 		super(parent, style);
 	}
 
@@ -53,7 +53,7 @@ public class WavesEdt extends Dialog {
 
 		m_shell = new Shell(parent, SWT.RESIZE | SWT.DIALOG_TRIM | SWT.MODELESS);
 		m_shell.setSize(459, 300);
-		m_shell.setText("Waves Editor");
+		m_shell.setText("Frequency Editor");
         {
 			GridLayout gl = new GridLayout(1, false);
 			gl.horizontalSpacing = 7;
@@ -63,7 +63,7 @@ public class WavesEdt extends Dialog {
 			m_shell.setLayout(gl);
         }
 		
-		final String[] columnTitles = { "Y Wave", "X Wave", "Amplitude", "Phase" };
+		final String[] columnTitles = { "Y Freq", "X Freq", "Amplitude", "Phase" };
 
 		// create virtual table: table items are created on demand using the SetData listener
 		m_table = new Table(m_shell, SWT.BORDER | SWT.VIRTUAL );
@@ -141,9 +141,14 @@ public class WavesEdt extends Dialog {
 										case SWT.Traverse:
 											switch (e.detail) {
 											case SWT.TRAVERSE_RETURN:
+												String curText = item.getText(column);
 												item.setText(column, text.getText());
-												updateFD(item);
-												updateOutput(views, 0);
+												boolean success = updateFD(item);
+												if (success) {
+													updateOutput(views, 0);
+												} else {
+													item.setText(column, curText);
+												}
 												// FALL THROUGH
 											case SWT.TRAVERSE_ESCAPE:
 												text.dispose();
@@ -354,7 +359,7 @@ public class WavesEdt extends Dialog {
 			if (!display.readAndDispatch())
 				display.sleep();
 		}
-		views.closeWaves();
+		views.closeFrequencies();
 		return null;
 	}
 
@@ -407,23 +412,32 @@ public class WavesEdt extends Dialog {
      * Read table item and update frequency domain object
      * Amplitudes are normalized by 1/(width*height), hence amplitude(0,0) is mean image intensity in range [0,255]    
      */   
-    private void updateFD(TableItem item) {
+    private boolean updateFD(TableItem item) {
     	final int width = m_fd.getSpectrumWidth();
     	final int height = m_fd.getSpectrumHeight();
     	final int size = width*height;
-		final double amp = Double.parseDouble(item.getText(Amp))*size;    		
-		final double phi = Double.parseDouble(item.getText(Phi));    		
     	
-		int v = Integer.parseInt(item.getText(V));    		
-		int u = Integer.parseInt(item.getText(U));    		
-		if (m_shiftedBtn.getSelection()) {				
-			if (v < 0) v += height;				
-			if (u < 0) u += width;    			    		
-		}    		
-		m_fd.setValue(u, v, amp, phi);
+    	double amp = 0, phi = 0;
+    	int v = 0, u = 0;
+    	
+    	try {
+    		amp = Double.parseDouble(item.getText(Amp))*size;  
+    		phi = Double.parseDouble(item.getText(Phi));
+    		v = Integer.parseInt(item.getText(V));    		
+    		u = Integer.parseInt(item.getText(U));    		
 
-		FrequencyDomain fd = m_fd.clone();
-    	m_transformed = FFT.ifft2D(fd);
+    		if (m_shiftedBtn.getSelection()) {				
+    			if (v < 0) v += height;				
+    			if (u < 0) u += width;    			    		
+    		}    		
+    		m_fd.setValue(u, v, amp, phi);
+
+    		FrequencyDomain fd = m_fd.clone();
+        	m_transformed = FFT.ifft2D(fd);
+        	return true;
+    	} catch(NumberFormatException ex) {  
+    		return false;
+    	}    	
     }
 
     /**
@@ -490,15 +504,13 @@ public class WavesEdt extends Dialog {
 	    	views.close(false); 
     		break;
     	case 2: 
-    		outData = FFT.getPowerSpectrum(m_fd);
-			if (m_shiftedBtn.getSelection()) FFT.swapQuadrants(outData);
+    		outData = FFT.getPowerSpectrum(m_shiftedBtn.getSelection() ? m_fd.swapQuadrants() : m_fd);
 			m_disableUpdate = true;
 			views.showImageInSecondView(outData);
 			m_disableUpdate = false;
 			break;
     	case 3:
-			outData = FFT.getPhaseSpectrum(m_fd);
-			if (m_shiftedBtn.getSelection()) FFT.swapQuadrants(outData);
+			outData = FFT.getPhaseSpectrum(m_shiftedBtn.getSelection() ? m_fd.swapQuadrants() : m_fd);
 			m_disableUpdate = true;
 			views.showImageInSecondView(outData);
 			m_disableUpdate = false;
@@ -508,7 +520,7 @@ public class WavesEdt extends Dialog {
 			outData = m_transformed;
 			if (m_equalizedBtn.getSelection()) {
 				outData = (ImageData)outData.clone();
-				//HistogramEqualization.equalization(outData);
+				//ContrastEnhancement.equalization(outData);
 			}
 			views.showImageInSecondView(outData);
 			m_disableUpdate = false;
