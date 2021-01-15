@@ -13,6 +13,7 @@ import utils.Parallel;
  */
 public class ColorSpaces {
 	private static final int ImageSize = 1000;
+	private static boolean ImprovedLabDistance = false;
 	
 	public static ImageData grayscale() {
 		ImageData outData = ImageProcessing.createImage(ImageSize, ImageSize, Picsi.IMAGE_TYPE_GRAY);
@@ -412,6 +413,7 @@ public class ColorSpaces {
 	}
 
 	public static ImageData labWheel() {
+		// TODO zwischen magenta und blau die Abstände von H übernehmen
 		ImageData outData = ImageProcessing.createImage(ImageSize, ImageSize, Picsi.IMAGE_TYPE_RGB);
 		
 		final int center = ImageSize/2;
@@ -435,25 +437,14 @@ public class ColorSpaces {
 		
 		for(int i = 0; i < nColors; i++) {
 			hsv[0] = (i + startOffset)%nColors/(double)nColors;
+			//if (hsv[0] > 0.6 && hsv[0] < 0.8) System.out.println("HSV = " + Arrays.toString(hsv));
 			hsv2rgb(hsv, colors[i]);
 			rgb2xyz(colors[i], colors[i]);
+			//if (hsv[0] > 0.6 && hsv[0] < 0.8) System.out.println("XYZ = " + Arrays.toString(colors[i]));
 			xyz2lab(colors[i], colors[i]);
+			//if (hsv[0] > 0.6 && hsv[0] < 0.8) System.out.println("Hue = " + i/(double)nColors + ", LAB = " + Arrays.toString(colors[i]) + ", diff = " + distance2(colors[i], colors[i-1]));
 		}
 		colors[nColors] = colors[0]; // reference to first color
-
-		// just for debugging purposes
-		/*for(int i = 0; i < nColors; i++) {
-			//System.out.println(Arrays.toString(colors[i]));
-			double[] rgb = new double[3];
-			hsv[0] = i/(double)nColors;
-			hsv2rgb(hsv, rgb);
-			rgb[0] = double2byte(rgb[0]);
-			rgb[1] = double2byte(rgb[1]);
-			rgb[2] = double2byte(rgb[2]);
-			System.out.println(Arrays.toString(rgb));
-			System.out.println(Arrays.toString(colors[i]));
-			System.out.println(Math.sqrt(distance2(colors[i], colors[i+1])));
-		}*/
 
 		// compute mean squared distance
 		double mse = 0;
@@ -476,8 +467,9 @@ public class ColorSpaces {
 			while(i < nColors && j < nCircleColors) {
 				while(i < nColors && distance2(circle[j-1], colors[i]) < d2) i++;
 				
-				final double delta1 = Math.abs(d - Math.sqrt(distance2(circle[j-1], colors[i-1])));
-				final double delta2 = Math.abs(d - Math.sqrt(distance2(circle[j-1], colors[i])));
+				final double delta1 = Math.abs(d2 - distance2(circle[j-1], colors[i-1]));
+				final double delta2 = Math.abs(d2 - distance2(circle[j-1], colors[i]));
+				//System.out.println("delta1 = " + delta1 + ", delta2 = " + delta2);
 				
 				if (delta1 < delta2) {
 					circle[j++] = colors[i-1];
@@ -485,6 +477,7 @@ public class ColorSpaces {
 					circle[j++] = colors[i++];
 				}
 			}
+			
 			if (j < nCircleColors) {
 				// circle is not full -> reduce d2
 				// j colors have been set
@@ -597,7 +590,6 @@ public class ColorSpaces {
 				}
 			}
 		});
-		
 		return outData;
 	}
 	
@@ -648,7 +640,8 @@ public class ColorSpaces {
 		
 		if (c > 0) {
 			if (M == R) {
-				h = ((G - B)/c)%6;
+				h = (G - B)/c;
+				if (h < 0) h += 6;
 			} else if (M == G) {
 				h = 2 + (B - R)/c;
 			} else {
@@ -838,8 +831,9 @@ public class ColorSpaces {
 		final double dx = a[0] - b[0];
 		final double dy = a[1] - b[1];
 		final double dz = a[2] - b[2];
+		final double magentaCorrection = (ImprovedLabDistance && b[2] < -0.9 && b[1] > 0.792 && b[1] < 0.95) ? 5 : 1;
 		
-		return dx*dx + dy*dy + dz*dz;
+		return (dx*dx + dy*dy + dz*dz)*magentaCorrection;
 	}
 	
 	private static double distance2(double a, double b) {

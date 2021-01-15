@@ -204,7 +204,30 @@ public class FrequencyDomain implements Cloneable {
 		return fd;
 	}
 	
-	public FrequencyDomain multiply(double d) {
+	public void multiply(int u, int v, double d) {
+		m_g[v][u].multiply(d);
+	}
+	
+	public void multiply(double d) {
+		Parallel.For(0, m_g.length, v -> {
+			for(int u = 0; u < m_g[v].length; u++) {
+				m_g[v][u].multiply(d);
+			}
+		});
+	}
+	
+	public void multiply(FrequencyDomain fd) {
+		assert m_g.length == fd.m_g.length;
+		
+		Parallel.For(0, m_g.length, v -> {
+			assert m_g[v].length == fd.m_g[v].length;
+			for(int u = 0; u < m_g[v].length; u++) {
+				m_g[v][u].multiply(fd.m_g[v][u]);
+			}
+		});
+	}
+
+	public FrequencyDomain mul(double d) {
 		FrequencyDomain fd = new FrequencyDomain(this, true);
 		
 		Parallel.For(0, m_g.length, v -> {
@@ -215,7 +238,7 @@ public class FrequencyDomain implements Cloneable {
 		return fd;
 	}
 	
-	public FrequencyDomain multiply(FrequencyDomain fd2) {
+	public FrequencyDomain mul(FrequencyDomain fd2) {
 		assert m_g.length == fd2.m_g.length;
 		FrequencyDomain fd = new FrequencyDomain(this, true);
 		
@@ -228,7 +251,24 @@ public class FrequencyDomain implements Cloneable {
 		return fd;
 	}
 
-	public FrequencyDomain divide(FrequencyDomain fd2) {
+	public void divide(FrequencyDomain fd) {
+		assert m_g.length == fd.m_g.length;
+
+		Parallel.For(0, m_g.length, v -> {
+			assert m_g[v].length == fd.m_g[v].length;
+			for(int u = 0; u < m_g[v].length; u++) {
+				if (fd.m_g[v][u].abs2() == 0) {
+					// division by zero
+					m_g[v][u].m_re = 0;
+					m_g[v][u].m_im = 0;
+				} else {
+					m_g[v][u].divide(fd.m_g[v][u]);
+				}
+			}
+		});
+	}
+		
+	public FrequencyDomain div(FrequencyDomain fd2) {
 		assert m_g.length == fd2.m_g.length;
 		FrequencyDomain fd = new FrequencyDomain(this, true);
 		

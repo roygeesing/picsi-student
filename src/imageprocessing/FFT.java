@@ -295,7 +295,7 @@ public class FFT implements IImageProcessor {
 		FrequencyDomain fdi = fft2D(inData);
 		
 		// convolve inData with filter
-		FrequencyDomain fdif = fdi.multiply(fdf);
+		FrequencyDomain fdif = fdi.mul(fdf);
 		
 		// inverse fft 
 		ImageData blurredData = ifft2D(fdif); // image with integer values
@@ -307,10 +307,10 @@ public class FFT implements IImageProcessor {
 			return blurredData;
 		case 1:
 			// inverse filtering using non-integral data
-			return ifft2D(fdif.divide(fdf));			
+			return ifft2D(fdif.div(fdf));			
 		case 2:
 			// inverse filtering using integral blurred data
-			return ifft2D(fft2D(blurredData).divide(fdf));
+			return ifft2D(fft2D(blurredData).div(fdf));
 		case 3:
 		{
 			// using integral blurred data
@@ -318,7 +318,9 @@ public class FFT implements IImageProcessor {
 
 			final int width = fdif.getSpectrumWidth();
         	final int height = fdif.getSpectrumHeight();
-			final int r = Math.min(width, height)/30;
+        	final int sigmoidScale = 2;
+    		final int sigmoidDomain = 16*sigmoidScale;
+			final int r = Math.min(width, height)/35 - sigmoidDomain/2;
     		final int hD2 = height/2;
     		final int wD2 = width/2;
 
@@ -331,16 +333,24 @@ public class FFT implements IImageProcessor {
             		final double dist = Math.hypot(u2, v2);
             		
             		if ((u != 0 || v != 0) && dist > r) {
-            			fdif2.setValue(u, v, 0, 0);
+            			if (dist < r + sigmoidDomain) {
+            				final double t = dist - r - sigmoidDomain/2;
+            				fdif2.multiply(u, v, 1 - sigmoid(t/sigmoidScale));
+            			} else {
+            				fdif2.setValue(u, v, 0, 0);
+            			}
             		}
-    				
     			}
       		});
         	
 			// inverse filtering using non-integral data
-			return ifft2D(fdif2.divide(fdf));
+			return ifft2D(fdif2.div(fdf));
 		}
 		}
+	}
+	
+	private static double sigmoid(double t) {
+		return 0.5 + Math.tanh(t/2)/2;
 	}
 	
 	/**

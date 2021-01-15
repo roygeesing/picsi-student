@@ -446,14 +446,17 @@ public class FrequencyEdt extends Dialog {
      * @param lowPass
      */
     private void applyFilter(String s, boolean lowPass) {
-        try {
-            double r = Double.parseDouble(s);
-            if (r >= 0) {
-            	final int width = m_fd.getSpectrumWidth();
-            	final int height = m_fd.getSpectrumHeight();
-	    		final int hD2 = height/2;
-	    		final int wD2 = width/2;
+    	final int sigmoidScale = 2;
+		final int sigmoidDomain = 16*sigmoidScale;
+    	final int width = m_fd.getSpectrumWidth();
+    	final int height = m_fd.getSpectrumHeight();
+		final int hD2 = height/2;
+		final int wD2 = width/2;
 
+		try {
+            double r = Double.parseDouble(s) - ((lowPass) ? sigmoidDomain/2 : -sigmoidDomain/2);
+            
+            if (r >= 0) {
             	Parallel.For(-hD2, height - hD2, v2 -> {
             		final int v = (v2 < 0) ? v2 + height : v2;
             		
@@ -462,7 +465,21 @@ public class FrequencyEdt extends Dialog {
                 		final double dist = Math.hypot(u2, v2);
                 		
                 		if ((u != 0 || v != 0) && (lowPass && dist > r || !lowPass && dist < r)) {
-                    		m_fd.setValue(u, v, 0, 0);
+                			if (lowPass) {
+	                			if (dist < r + sigmoidDomain) {
+	                				final double t = dist - r - sigmoidDomain/2;
+	                				m_fd.multiply(u, v, 1 - sigmoid(t/sigmoidScale));
+	                			} else {
+	                           		m_fd.setValue(u, v, 0, 0);
+	                			}
+                			} else {
+                				if (dist >= r - sigmoidDomain) {
+	                				final double t = dist - r + sigmoidDomain/2;
+	                				m_fd.multiply(u, v, sigmoid(t/sigmoidScale));                					
+                				} else {
+	                           		m_fd.setValue(u, v, 0, 0);
+                				}
+                			}
                 		}
         				
         			}
@@ -475,7 +492,11 @@ public class FrequencyEdt extends Dialog {
         }
     }
 
-    /**
+	private static double sigmoid(double t) {
+		return 0.5 + Math.tanh(t/2)/2;
+	}
+
+	/**
      * Update output image
      * @param views
      * @param index 0 if selected radio button has to be determined
