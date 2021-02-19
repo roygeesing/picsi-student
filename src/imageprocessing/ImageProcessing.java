@@ -30,7 +30,7 @@ public class ImageProcessing {
 		case Picsi.IMAGE_TYPE_BINARY:
 			return new ImageData(width, height, 1, new PaletteData(new RGB[]{ new RGB(255, 255, 255), new RGB(0, 0, 0) }));
 		case Picsi.IMAGE_TYPE_GRAY:
-			//return new ImageData(width, height, 8, new PaletteData(0xFF, 0xFF, 0xFF)); // is not visualized correctly on Windows
+			//return new ImageData(width, height, 8, new PaletteData(0xFF, 0xFF, 0xFF)); // check if visualized correctly
 			RGB[] grayscale = new RGB[256];
 			for(int i = 0; i < grayscale.length; i++) grayscale[i] = new RGB(i, i, i);
 			return new ImageData(width, height, 8, new PaletteData(grayscale));
@@ -40,9 +40,12 @@ public class ImageProcessing {
 			pd.greenShift = -8;
 			pd.blueShift = 0;
 			return new ImageData(width, height, 24, pd);
+		case Picsi.IMAGE_TYPE_GRAY32:
+			return new ImageData(width, height, 32, new PaletteData(-1, -1, -1)); // is not visualized correctly on Windows
 		}
 		return null;
 	}
+	
 	
 	/**
 	 * Compute PSNR of two images of the same image type

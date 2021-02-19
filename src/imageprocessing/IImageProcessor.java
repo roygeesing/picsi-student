@@ -18,9 +18,9 @@ public interface IImageProcessor {
 	
 	/**
 	 * Runs the image processing routine
-	 * @param input image
+	 * @param inData input image data
 	 * @param imageType one of the image types define in Globl.IMAGE_TYPE_XXX
 	 * @return output image or null if the image processing doesn't produce a useful output
 	 */
-	public ImageData run(final ImageData input, int imageType);
+	public ImageData run(final ImageData inData, int imageType);
 }

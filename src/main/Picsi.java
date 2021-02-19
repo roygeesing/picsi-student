@@ -31,9 +31,10 @@ public class Picsi {
 	public static final int IMAGE_TYPE_GRAY = 2;
 	public static final int IMAGE_TYPE_RGB = 4;
 	public static final int IMAGE_TYPE_INDEXED = 8;
+	public static final int IMAGE_TYPE_GRAY32 = 16;
 
 	public static final String APP_NAME = "FHNW Picsi";
-	public static final String APP_VERSION = "2.9.2021.02 (Student)"; // major.minor.year.week
+	public static final String APP_VERSION = "2.10.2021.07 (Student)"; // major.minor.year.week
 	public static final String APP_COPYRIGHT = "Copyright \u00a9 " + new GregorianCalendar().get(Calendar.YEAR) 
 			+ "\nUniversity of Applied Sciences Northwestern Switzerland\nFHNW School of Engineering, IMVS\nWindisch, Switzerland";
 	public static final String APP_URL = "https://gitlab.fhnw.ch/christoph.stamm/picsi-student";
@@ -135,6 +136,8 @@ public class Picsi {
 				
 				if (imageData.depth == 8 && (palette.blueMask & palette.greenMask & palette.redMask) == 0xFF) {
 					return Picsi.IMAGE_TYPE_GRAY;
+				} else if (imageData.depth == 32 && (palette.blueMask & palette.greenMask & palette.redMask) == -1) {
+					return Picsi.IMAGE_TYPE_GRAY32;
 				} else {
 					return Picsi.IMAGE_TYPE_RGB;
 				}
