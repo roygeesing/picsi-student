@@ -126,10 +126,12 @@ public class Matrix {
 	}
 	
 	/**
-	 * Matrix inversion
+	 * Matrix inversion for 3x3 matrices
 	 * @return inverted matrix
 	 */
 	public Matrix inverse() {
+		assert nRows() == 3 && nCols() == 3 : "Matrix size must be 3 x 3";
+		
 		if (m_data[2][0] == 0 && m_data[2][1] == 0 && m_data[2][2] == 1) {
 			double den = m_data[0][0]*m_data[1][1] - m_data[0][1]*m_data[1][0];
 			assert den != 0 : "matrix is singular";
