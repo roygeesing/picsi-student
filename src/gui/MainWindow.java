@@ -1130,7 +1130,7 @@ public class MainWindow {
 		try {
 			if (si != null) {
 				m_views.save(first, si.filename, si.fileType);
-				setTitle(si.filename, si.fileType);
+				if (first) setTitle(si.filename, si.fileType);
 			} else {
 				assert m_views.getDocument(first).getFileName() != null : "doc has no filename";
 				m_views.save(first, null, -1);
