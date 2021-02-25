@@ -20,7 +20,7 @@ public class MAGB extends ImageMenu {
 	public MAGB(TwinView views, MRU mru) {
 		super(views, mru);
 		
-		add(new ImageMenuItem("&Invert\tF1", 									SWT.F1, new Inverter()));
+		add(new ImageMenuItem("&Invert\tF1", SWT.F1, new Inverter()));
 		// TODO add here further image processing entries (they are inserted into the MAGB menu)
 	}
 }
