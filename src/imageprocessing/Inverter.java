@@ -19,8 +19,8 @@ public class Inverter implements IImageProcessor {
 	}
 
 	@Override
-	public ImageData run(ImageData input, int imageType) {
-		ImageData outData = (ImageData)input.clone();
+	public ImageData run(ImageData inData, int imageType) {
+		ImageData outData = (ImageData)inData.clone();
 		invert(outData, imageType);
 		return outData;
 	}
