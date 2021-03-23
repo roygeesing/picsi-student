@@ -70,7 +70,7 @@ public class MainWindow {
 				@Override
 				public void widgetDisposed(DisposeEvent e) {
 					// Clean up.
-					if (m_views != null) m_views.clean();;
+					if (m_views != null) m_views.dispose();;
 					if (m_editor != null) m_editor.dispose();
 				}
 			});
@@ -87,8 +87,6 @@ public class MainWindow {
 		
 		// create twin view: must be done before createMenuBar, because of dynamic image processing menu items
 		m_views = new TwinView(this, m_shell, SWT.NONE);
-		m_magb = new MAGB(m_views, m_mru);
-		m_bver = new BVER(m_views, m_mru);
 		
 		// create
 		createMenuBar();
@@ -145,11 +143,15 @@ public class MainWindow {
 	 * Set the status label to show color information
 	 * for the specified pixel in the image.
 	 */
-	public void showColorForPixel(Object[] args) {
+	public void showColorForPixel(Object[] args, boolean average) {
 		if (args == null) {
 			m_statusLabel.setText("");
 		} else {
-			m_statusLabel.setText(Picsi.createMsg("Image color at ({0}, {1}) - pixel {2} [0x{3}] - is {4} [{5}] {6}", args));
+			if (average) {
+				m_statusLabel.setText(Picsi.createMsg("Mean color at ({0}, {1}) - pixel {2} [0x{3}] - is {4} [{5}] {6}", args));
+			} else {
+				m_statusLabel.setText(Picsi.createMsg("Image color at ({0}, {1}) - pixel {2} [0x{3}] - is {4} [{5}] {6}", args));
+			}
 		}
 	}
 
@@ -368,6 +370,7 @@ public class MainWindow {
 		createMagbMenu(menuBar);
 		createBverMenu(menuBar);
 		createColorSpacesMenu(menuBar);
+		createToolsMenu(menuBar);
 		createWindowMenu(menuBar);
 		createHelpMenu(menuBar);
 		return menuBar;
@@ -680,47 +683,27 @@ public class MainWindow {
 	private void createMagbMenu(Menu menuBar) {
 		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
 		item.setText("&MAGB");
-		final Menu magbMenu = new Menu(m_shell, SWT.DROP_DOWN);
-		item.setMenu(magbMenu);
-		magbMenu.addListener(SWT.Show,  new Listener() {
-			@Override
-			public void handleEvent(Event e) {
-				MenuItem[] menuItems = magbMenu.getItems();
-				for (int i=0; i < menuItems.length; i++) {
-					menuItems[i].setEnabled(!m_views.isEmpty() && m_magb.isEnabled(i));
-				}
-			}
-		});
-
+		
 		// user defined image menu items
-		m_magb.createMenuItems(magbMenu);
+		m_magb = new MAGB(item, m_views, m_mru);
+		
 	}
 	
 	// BVER menu
 	private void createBverMenu(Menu menuBar) {
 		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
 		item.setText("&BVER");
-		final Menu bverMenu = new Menu(m_shell, SWT.DROP_DOWN);
-		item.setMenu(bverMenu);
-		bverMenu.addListener(SWT.Show,  new Listener() {
-			@Override
-			public void handleEvent(Event e) {
-				MenuItem[] menuItems = bverMenu.getItems();
-				for (int i=0; i < menuItems.length; i++) {
-					menuItems[i].setEnabled(!m_views.isEmpty() && m_bver.isEnabled(i));
-				}
-			}
-		});
-
+		
 		// user defined image menu items
-		m_bver.createMenuItems(bverMenu);
+		m_bver = new BVER(item, m_views, m_mru);
+
 	}
-	
+
 	// Color spaces menu
 	private void createColorSpacesMenu(Menu menuBar) {
 		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
 		item.setText("&Color-Spaces");
-		final Menu colorSpacesMenu = new Menu(m_shell, SWT.DROP_DOWN);
+		final Menu colorSpacesMenu = new Menu(menuBar.getParent(), SWT.DROP_DOWN);
 		item.setMenu(colorSpacesMenu);
 		
 		// Color space -> Luminance
@@ -901,17 +884,127 @@ public class MainWindow {
 		});
 	}
 	
+	// Tools menu
+	private void createToolsMenu(Menu menuBar) {
+		final int SHOWCOLORTABLE = 0;
+		final int SHOWHISTOGRAM = 1;
+		final int SHOWLINE = 2;
+		final int SHOWPSNR = 3;
+		final int SHOWWAVES = 4;
+		
+		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
+		item.setText("&Tools");
+		final Menu windowMenu = new Menu(m_shell, SWT.DROP_DOWN);
+		item.setMenu(windowMenu);
+		windowMenu.addListener(SWT.Show,  new Listener() {
+			@Override
+			public void handleEvent(Event e) {
+				MenuItem[] menuItems = windowMenu.getItems();
+				menuItems[SHOWCOLORTABLE].setEnabled(!m_views.isEmpty() && (m_views.getImageType(true) != Picsi.IMAGE_TYPE_RGB ||
+						(m_views.hasSecondView() && (m_views.getImageType(false) != Picsi.IMAGE_TYPE_RGB))
+				));
+				menuItems[SHOWCOLORTABLE].setSelection(m_views.hasColorTable());		
+				menuItems[SHOWHISTOGRAM].setEnabled(!m_views.isEmpty());
+				menuItems[SHOWHISTOGRAM].setSelection(m_views.hasHistogram());		
+				menuItems[SHOWLINE].setEnabled(!m_views.isEmpty());
+				menuItems[SHOWLINE].setSelection(m_views.hasLineViewer());						
+				menuItems[SHOWPSNR].setEnabled(!m_views.isEmpty() && m_views.hasSecondView() 
+						&& m_views.getImageType(true) == m_views.getImageType(false) 
+						&& m_views.getView(true).getImageHeight() == m_views.getView(false).getImageHeight()
+						&& m_views.getView(true).getImageWidth() == m_views.getView(false).getImageWidth()
+				);
+				menuItems[SHOWWAVES].setEnabled(!m_views.isEmpty() && m_views.getImageType(true) == Picsi.IMAGE_TYPE_GRAY);
+				menuItems[SHOWWAVES].setSelection(m_views.hasWaves());		
+			}
+		});
+
+		// Tools -> Color Table
+		item = new MenuItem(windowMenu, SWT.CHECK);
+		item.setText("Color &Table...\tCtrl+T");
+		item.setAccelerator(SWT.MOD1 + 'T');
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				if (!m_views.isEmpty()) {
+					m_views.toggleColorTable();
+				}
+			}
+		});
+
+		// Tools -> Histogram
+		item = new MenuItem(windowMenu, SWT.CHECK);
+		item.setText("&Histogram...\tCtrl+H");
+		item.setAccelerator(SWT.MOD1 + 'H');
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				if (!m_views.isEmpty()) {
+					m_views.toggleHistogram();
+				}
+			}
+		});
+
+		// Tools -> Image Line Viewer
+		item = new MenuItem(windowMenu, SWT.CHECK);
+		item.setText("Image &Line...\tCtrl+L");
+		item.setAccelerator(SWT.MOD1 + 'L');
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				if (!m_views.isEmpty()) {
+					m_views.toggleLineViewer();
+				}
+			}
+		});
+
+		// Tools -> Compute PSNR
+		item = new MenuItem(windowMenu, SWT.PUSH);
+		item.setText("Compute &PSNR...\tCtrl+Q");
+		item.setAccelerator(SWT.MOD1 + 'Q');
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				if (!m_views.isEmpty()) {
+					ImageData imageData1 = m_views.getImage(true);
+					ImageData imageData2 = m_views.getImage(false);
+					int imageType = m_views.getImageType(true); assert imageType == m_views.getImageType(false);
+					double[] psnr = ImageProcessing.psnr(imageData1, imageData2, imageType);
+					MessageBox box = new MessageBox(Picsi.s_shell, SWT.OK);
+					
+					box.setText("PSNR");
+					if (psnr != null) {
+						if (imageType == Picsi.IMAGE_TYPE_INDEXED || imageType == Picsi.IMAGE_TYPE_RGB) {
+							box.setMessage(Picsi.createMsg("Red: {0}, Green: {1}, Blue: {2}", new Object[] { psnr[0], psnr[1], psnr[2] }));
+						} else {
+							box.setMessage("PSNR: " + psnr[0]);
+						}
+					}
+					box.open();
+				}
+			}
+		});
+
+		// Tools -> Frequency Editor
+		item = new MenuItem(windowMenu, SWT.CHECK);
+		item.setText("&Frequency Editor...\tCtrl+F");
+		item.setAccelerator(SWT.MOD1 + 'F');
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				if (!m_views.isEmpty() && m_views.getImageType(true) == Picsi.IMAGE_TYPE_GRAY) {
+					m_views.toggleFrequencies();
+				}
+			}
+		});
+	}
+	
 	// Window menu
 	private void createWindowMenu(Menu menuBar) {
 		final int AUTO_ZOOM = 0;
 		final int ORIGINAL_SIZE = 1;
 		final int SYNCHRONIZE = 2;
 		final int SHOWOUTPUT = 4;
-		final int SHOWCOLORTABLE = 6;
-		final int SHOWHISTOGRAM = 7;
-		final int SHOWLINE = 8;
-		final int SHOWPSNR = 9;
-		final int SHOWWAVES = 10;
+		final int AVERAGECOLOR = 6;
 		
 		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
 		item.setText("&Window");
@@ -928,21 +1021,8 @@ public class MainWindow {
 				menuItems[SYNCHRONIZE].setSelection(m_views.isSynchronized());
 				menuItems[SHOWOUTPUT].setEnabled(!m_views.isEmpty());
 				menuItems[SHOWOUTPUT].setSelection(m_views.hasSecondView());
-				menuItems[SHOWCOLORTABLE].setEnabled(!m_views.isEmpty() && (m_views.getImageType(true) != Picsi.IMAGE_TYPE_RGB ||
-						(m_views.hasSecondView() && (m_views.getImageType(false) != Picsi.IMAGE_TYPE_RGB))
-				));
-				menuItems[SHOWCOLORTABLE].setSelection(m_views.hasColorTable());		
-				menuItems[SHOWHISTOGRAM].setEnabled(!m_views.isEmpty());
-				menuItems[SHOWHISTOGRAM].setSelection(m_views.hasHistogram());		
-				menuItems[SHOWLINE].setEnabled(!m_views.isEmpty());
-				menuItems[SHOWLINE].setSelection(m_views.hasLineViewer());						
-				menuItems[SHOWPSNR].setEnabled(!m_views.isEmpty() && m_views.hasSecondView() 
-						&& m_views.getImageType(true) == m_views.getImageType(false) 
-						&& m_views.getView(true).getImageHeight() == m_views.getView(false).getImageHeight()
-						&& m_views.getView(true).getImageWidth() == m_views.getView(false).getImageWidth()
-				);
-				menuItems[SHOWWAVES].setEnabled(!m_views.isEmpty() && m_views.getImageType(true) == Picsi.IMAGE_TYPE_GRAY);
-				menuItems[SHOWWAVES].setSelection(m_views.hasWaves());		
+				menuItems[AVERAGECOLOR].setEnabled(!m_views.isEmpty());
+				menuItems[AVERAGECOLOR].setSelection(m_views.useMeanColor());
 			}
 		});
 
@@ -983,10 +1063,10 @@ public class MainWindow {
 
 		new MenuItem(windowMenu, SWT.SEPARATOR);
 
-		// Window -> Show Output
+		// Window -> Show Output Pane
 		item = new MenuItem(windowMenu, SWT.CHECK);
-		item.setText("Sho&w Output\tCtrl+W");
-		item.setAccelerator(SWT.MOD1 + 'W');
+		item.setText("Show &Output Pane\tCtrl+O");
+		item.setAccelerator(SWT.MOD1 + 'O');
 		item.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
@@ -996,82 +1076,14 @@ public class MainWindow {
 
 		new MenuItem(windowMenu, SWT.SEPARATOR);
 
-		// Window -> Show Color Table
+		// Window -> Mean Color
 		item = new MenuItem(windowMenu, SWT.CHECK);
-		item.setText("Show Color &Table...\tCtrl+T");
-		item.setAccelerator(SWT.MOD1 + 'T');
+		item.setText("&Mean Color\tCtrl+M");
+		item.setAccelerator(SWT.MOD1 + 'M');
 		item.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
-				if (!m_views.isEmpty()) {
-					m_views.toggleColorTable();
-				}
-			}
-		});
-
-		// Window -> Show Histogram
-		item = new MenuItem(windowMenu, SWT.CHECK);
-		item.setText("Show &Histogram...\tCtrl+H");
-		item.setAccelerator(SWT.MOD1 + 'H');
-		item.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent event) {
-				if (!m_views.isEmpty()) {
-					m_views.toggleHistogram();
-				}
-			}
-		});
-
-		// Window -> Show Line Viewer
-		item = new MenuItem(windowMenu, SWT.CHECK);
-		item.setText("Show &Line...\tCtrl+L");
-		item.setAccelerator(SWT.MOD1 + 'L');
-		item.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent event) {
-				if (!m_views.isEmpty()) {
-					m_views.toggleLineViewer();
-				}
-			}
-		});
-
-		// Window -> Show PSNR
-		item = new MenuItem(windowMenu, SWT.PUSH);
-		item.setText("Show &PSNR...\tCtrl+Q");
-		item.setAccelerator(SWT.MOD1 + 'Q');
-		item.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent event) {
-				if (!m_views.isEmpty()) {
-					ImageData imageData1 = m_views.getImage(true);
-					ImageData imageData2 = m_views.getImage(false);
-					int imageType = m_views.getImageType(true); assert imageType == m_views.getImageType(false);
-					double[] psnr = ImageProcessing.psnr(imageData1, imageData2, imageType);
-					MessageBox box = new MessageBox(Picsi.s_shell, SWT.OK);
-					
-					box.setText("PSNR");
-					if (psnr != null) {
-						if (imageType == Picsi.IMAGE_TYPE_INDEXED || imageType == Picsi.IMAGE_TYPE_RGB) {
-							box.setMessage(Picsi.createMsg("Red: {0}, Green: {1}, Blue: {2}", new Object[] { psnr[0], psnr[1], psnr[2] }));
-						} else {
-							box.setMessage("PSNR: " + psnr[0]);
-						}
-					}
-					box.open();
-				}
-			}
-		});
-
-		// Window -> Show Frequency Editor
-		item = new MenuItem(windowMenu, SWT.CHECK);
-		item.setText("Show &Frequencies...\tCtrl+F");
-		item.setAccelerator(SWT.MOD1 + 'F');
-		item.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent event) {
-				if (!m_views.isEmpty() && m_views.getImageType(true) == Picsi.IMAGE_TYPE_GRAY) {
-					m_views.toggleFrequencies();
-				}
+				if (!m_views.isEmpty()) m_views.toggleMeanAreaColor();
 			}
 		});
 	}

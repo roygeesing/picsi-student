@@ -33,7 +33,6 @@ public class Pipette {
 			ImageData image = new ImageData(Picsi.s_shell.getClass().getClassLoader().getResource("images/pipetteHS.png").openStream());
 			s_pipette = new Cursor(Picsi.s_shell.getDisplay(), image, 0, image.height - 1);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -88,7 +87,7 @@ public class Pipette {
 			
 			if (m_x >= 0) {
 				// read color at saved position
-				values = m_view.getPixelInfoAt(m_x, m_y); 
+				values = m_view.getPixelInfoAt(m_x, m_y, 0); 
 			}
 			if (values != null) {
 				int pixel = (int)values[2];

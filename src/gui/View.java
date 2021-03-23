@@ -3,9 +3,13 @@ import main.Picsi;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTError;
+import org.eclipse.swt.dnd.Clipboard;
+import org.eclipse.swt.dnd.TextTransfer;
+import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.MouseWheelListener;
 import org.eclipse.swt.events.PaintEvent;
@@ -24,6 +28,8 @@ import org.eclipse.swt.widgets.*;
  *
  */
 public class View extends Canvas {
+	private static final int MeanAreaRad = 4;
+	
 	private TwinView m_twins;
 	private int m_scrollPosX, m_scrollPosY; // origin of the visible view (= pixel when zoom = 1)
 	private Image m_image;					// device dependent image used in painting
@@ -32,12 +38,15 @@ public class View extends Canvas {
 	private PrinterData m_printerData;
 	private float m_zoom = 1.0f;
 	private boolean m_preventVscroll = false;
+	private Clipboard m_clipboard;
+	private String m_clipboardText;
 	
 	public View(TwinView compo) {
 		super(compo, SWT.V_SCROLL | SWT.H_SCROLL | SWT.NO_REDRAW_RESIZE | SWT.NO_BACKGROUND);
 		m_twins = compo;
 		
 		setBackground(new Color(getDisplay(), 128, 128, 255));
+		m_clipboard = new Clipboard(getDisplay());
 		
 		// Hook resize listener
 		addControlListener(new ControlAdapter() {
@@ -94,9 +103,35 @@ public class View extends Canvas {
 			public void mouseMove(MouseEvent event) {
 				View.this.setFocus();
 				if (m_image != null) {
-					m_twins.m_mainWnd.showColorForPixel(getPixelInfoAt(event.x,  event.y));
+					Object[] data;
+					if (m_twins.useMeanColor()) {
+						data = getPixelInfoAt(event.x,  event.y, MeanAreaRad);
+						m_twins.m_mainWnd.showColorForPixel(data, true);
+					} else {
+						data = getPixelInfoAt(event.x,  event.y, 0);
+						m_twins.m_mainWnd.showColorForPixel(data, false);
+					}
+					if (data != null) m_clipboardText = (String)data[4];
 				}
 			}
+		});
+		addMouseListener(new MouseListener() {
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				Transfer[] transfers = new Transfer[]{ TextTransfer.getInstance() };
+				Object[] data = new Object[]{m_clipboardText};
+				
+				m_clipboard.setContents(data, transfers);
+			}
+
+			@Override
+			public void mouseDown(MouseEvent e) {
+			}
+			
+			@Override
+			public void mouseUp(MouseEvent e) {
+			}
+			
 		});
 		addMouseWheelListener(new MouseWheelListener() {
 			@Override
@@ -113,6 +148,11 @@ public class View extends Canvas {
 		});
 	}
 
+	@Override
+	public void dispose() {
+		m_clipboard.dispose();
+	}
+	
 	public ImageData getImageData() {
 		return m_imageData;
 	}
@@ -317,7 +357,7 @@ public class View extends Canvas {
 		if (redraw) redraw();
 	}
 	
-	public Object[] getPixelInfoAt(int x, int y) {
+	public Object[] getPixelInfoAt(int x, int y, int radius) {
 		if (m_imageData == null) return null;
 		
 		x = client2ImageX(x);
@@ -326,6 +366,32 @@ public class View extends Canvas {
 		if (x >= 0 && x < m_imageData.width && y >= 0 && y < m_imageData.height) {
 			int pixel = m_imageData.getPixel(x, y);
 			RGB rgb = m_imageData.palette.getRGB(pixel);
+			
+			if (radius > 0) {
+				// compute average color
+				rgb.red = rgb.green = rgb.blue = 0;
+				int cnt = 0;
+				
+				for(int v = y - radius; v <= y + radius; v++) {
+					if (v >= 0 && v < m_imageData.height) {
+						for(int u = x - radius; u <= x + radius; u++) {
+							if (u >= 0 && u < m_imageData.width) {
+								RGB c = m_imageData.palette.getRGB(m_imageData.getPixel(u, v));
+								rgb.red += c.red;
+								rgb.green += c.green;
+								rgb.blue += c.blue;
+								cnt++;
+							}
+						}
+					}
+				}
+				
+				rgb.red /= cnt;
+				rgb.green /= cnt;
+				rgb.blue /= cnt;
+				pixel = m_imageData.palette.getPixel(rgb);
+			}
+			
 			boolean hasAlpha = false;
 			int alphaValue = 0;
 			if (m_imageData.alphaData != null && m_imageData.alphaData.length > 0) {

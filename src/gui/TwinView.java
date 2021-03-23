@@ -1,5 +1,8 @@
 package gui;
+import java.io.IOException;
+
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
@@ -14,6 +17,9 @@ import files.Document;
  *
  */
 public class TwinView extends Composite {
+	private static final int s_standardCursor = SWT.CURSOR_CROSS;
+	private static Cursor s_areaCursor = null;
+	
 	public MainWindow m_mainWnd;
 	
 	private Document m_doc1, m_doc2;
@@ -24,6 +30,7 @@ public class TwinView extends Composite {
 	private FrequencyEdt m_frequenciesEditor;
 	private boolean m_autoZoom = true;
 	private boolean m_synchronized = false;
+	private boolean m_meanColor = false;
 	
 	public TwinView(MainWindow mainWnd, Composite parent, int style) {
 		super(parent, style);
@@ -38,15 +45,24 @@ public class TwinView extends Composite {
 		
 		m_doc1 = new Document();
 		m_view1 = new View(this);
+		
+		try {
+			ImageData image = new ImageData(getShell().getClass().getClassLoader().getResource("images/areaHS.png").openStream());
+			s_areaCursor = new Cursor(getShell().getDisplay(), image, image.width/2, image.height/2);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}		
 	}
 
 	// dispose all dialogs
-	public void clean() {
+	@Override
+	public void dispose() {
 		m_view1.setImageData(null);
 		if (m_view2 != null) m_view2.setImageData(null);
 		closeColorTable();
 		closeHistogram();
 		closeFrequencies();
+		s_areaCursor.dispose();
 	}
 	
 	public boolean isEmpty() {
@@ -113,6 +129,10 @@ public class TwinView extends Composite {
 			assert m_doc2 != null : "m_doc2 is null";
 			m_doc2.save(m_view2.getImageData(), m_view2.getImageType(), filename, fileType);
 		}
+	}
+	
+	public boolean useMeanColor() {
+		return m_meanColor;
 	}
 	
 	public boolean hasAutoZoom() {
@@ -231,7 +251,7 @@ public class TwinView extends Composite {
 		    	
 				shell.setCursor(shell.getDisplay().getSystemCursor(SWT.CURSOR_WAIT));   	
 				m_frequenciesEditor.update(this);
-		    	shell.setCursor(shell.getDisplay().getSystemCursor(SWT.CURSOR_CROSS));			
+		    	shell.setCursor(shell.getDisplay().getSystemCursor(s_standardCursor));			
 			}
 		}
 		//System.out.println("Refresh");
@@ -304,6 +324,13 @@ public class TwinView extends Composite {
 		}
 	}
 	
+	public void toggleMeanAreaColor() {
+		m_meanColor = !m_meanColor;
+    	Shell shell = getShell();
+    	
+		shell.setCursor(m_meanColor ? s_areaCursor : shell.getDisplay().getSystemCursor(s_standardCursor));   	
+	}
+	
 	public void toggleColorTable() {
 		if (m_colorTable != null) {
 			// close color table
@@ -372,7 +399,7 @@ public class TwinView extends Composite {
 			m_frequenciesEditor = new FrequencyEdt(getShell());
 			shell.setCursor(shell.getDisplay().getSystemCursor(SWT.CURSOR_WAIT));   	
 			m_frequenciesEditor.open(this);
-	    	if (!shell.isDisposed()) shell.setCursor(shell.getDisplay().getSystemCursor(SWT.CURSOR_CROSS));			
+	    	if (!shell.isDisposed()) shell.setCursor(shell.getDisplay().getSystemCursor(s_standardCursor));			
 		}
 	}
 	
