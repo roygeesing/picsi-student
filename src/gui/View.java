@@ -28,7 +28,7 @@ import org.eclipse.swt.widgets.*;
  *
  */
 public class View extends Canvas {
-	private static final int MeanAreaRad = 4;
+	private static final int MeanAreaRad = 7; // diameter = 2*MeanAreaRad + 1 = Cursor square
 	
 	private TwinView m_twins;
 	private int m_scrollPosX, m_scrollPosY; // origin of the visible view (= pixel when zoom = 1)
