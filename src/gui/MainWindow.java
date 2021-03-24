@@ -70,7 +70,7 @@ public class MainWindow {
 				@Override
 				public void widgetDisposed(DisposeEvent e) {
 					// Clean up.
-					if (m_views != null) m_views.dispose();;
+					if (m_views != null) m_views.dispose();
 					if (m_editor != null) m_editor.dispose();
 				}
 			});
@@ -320,6 +320,8 @@ public class MainWindow {
 	 */
 	public boolean updateFile(String filename) {
 		boolean retValue = true;
+		Cursor cursor = m_shell.getCursor();
+		
 		m_shell.setCursor(m_display.getSystemCursor(SWT.CURSOR_WAIT));
 
 		int fileType = ImageFiles.determinefileType(filename);
@@ -334,7 +336,7 @@ public class MainWindow {
 			showErrorDialog("loading", filename, e);
 			retValue = false;
 		} finally {
-			m_shell.setCursor(m_display.getSystemCursor(SWT.CURSOR_CROSS));			
+			m_shell.setCursor(cursor);			
 		}
 		
 		return retValue;
@@ -1137,6 +1139,7 @@ public class MainWindow {
 			if (si == null) return false;
 		}
 		
+		Cursor cursor = m_shell.getCursor();
 		m_shell.setCursor(m_display.getSystemCursor(SWT.CURSOR_WAIT));
 		
 		try {
@@ -1152,7 +1155,7 @@ public class MainWindow {
 			showErrorDialog("saving", (si != null) ? si.filename : m_views.getDocument(first).getFileName(), e);
 			return false;
 		} finally {
-			m_shell.setCursor(m_display.getSystemCursor(SWT.CURSOR_CROSS));
+			m_shell.setCursor(cursor);
 			m_views.refresh(false);
 		}
 	}

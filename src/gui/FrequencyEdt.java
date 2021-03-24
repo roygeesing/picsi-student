@@ -3,11 +3,13 @@ package gui;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.TableEditor;
 import org.eclipse.swt.events.*;
+import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.*;
 
+//import imageprocessing.ContrastEnhancement;
 import imageprocessing.FFT;
 import utils.FrequencyDomain;
 import utils.Parallel;
@@ -380,6 +382,7 @@ public class FrequencyEdt extends Dialog {
     	
 		// update table
     	Shell shell = views.getShell();
+    	Cursor cursor = shell.getCursor();
     	
 		shell.setCursor(shell.getDisplay().getSystemCursor(SWT.CURSOR_WAIT));   	
     	
@@ -389,7 +392,7 @@ public class FrequencyEdt extends Dialog {
 
     	// update output: recursively calling update is prevented in updateOutput
     	updateOutput(views, 0);
-    	shell.setCursor(shell.getDisplay().getSystemCursor(SWT.CURSOR_CROSS));			
+    	shell.setCursor(cursor);			
     }
 
     /**

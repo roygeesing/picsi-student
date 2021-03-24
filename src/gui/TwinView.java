@@ -17,11 +17,10 @@ import files.Document;
  *
  */
 public class TwinView extends Composite {
-	private static final int s_standardCursor = SWT.CURSOR_CROSS;
-	private static Cursor s_areaCursor = null;
-	
 	public MainWindow m_mainWnd;
 	
+	private Cursor m_standardCursor = null;
+	private Cursor m_areaCursor = null;
 	private Document m_doc1, m_doc2;
 	private View m_view1, m_view2;
 	private ColorTableDlg m_colorTable;
@@ -36,6 +35,7 @@ public class TwinView extends Composite {
 		super(parent, style);
 		
 		m_mainWnd = mainWnd;
+		m_standardCursor = getShell().getCursor();
 		
 		GridData data = new GridData(SWT.FILL, SWT.FILL, true, true);
 		data.widthHint = 800;
@@ -48,7 +48,7 @@ public class TwinView extends Composite {
 		
 		try {
 			ImageData image = new ImageData(getShell().getClass().getClassLoader().getResource("images/areaHS.png").openStream());
-			s_areaCursor = new Cursor(getShell().getDisplay(), image, image.width/2, image.height/2);
+			m_areaCursor = new Cursor(getShell().getDisplay(), image, image.width/2, image.height/2);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}		
@@ -62,7 +62,7 @@ public class TwinView extends Composite {
 		closeColorTable();
 		closeHistogram();
 		closeFrequencies();
-		s_areaCursor.dispose();
+		m_areaCursor.dispose();
 	}
 	
 	public boolean isEmpty() {
@@ -248,10 +248,11 @@ public class TwinView extends Composite {
 			if (m_lineViewer != null) m_lineViewer.update(hasSecondView(), this); 
 			if (m_frequenciesEditor != null) {
 		    	Shell shell = getShell();
+		    	Cursor cursor = shell.getCursor();
 		    	
 				shell.setCursor(shell.getDisplay().getSystemCursor(SWT.CURSOR_WAIT));   	
 				m_frequenciesEditor.update(this);
-		    	shell.setCursor(shell.getDisplay().getSystemCursor(s_standardCursor));			
+		    	shell.setCursor(cursor);			
 			}
 		}
 		//System.out.println("Refresh");
@@ -328,7 +329,7 @@ public class TwinView extends Composite {
 		m_meanColor = !m_meanColor;
     	Shell shell = getShell();
     	
-		shell.setCursor(m_meanColor ? s_areaCursor : shell.getDisplay().getSystemCursor(s_standardCursor));   	
+		shell.setCursor(m_meanColor ? m_areaCursor : m_standardCursor);   	
 	}
 	
 	public void toggleColorTable() {
@@ -399,7 +400,7 @@ public class TwinView extends Composite {
 			m_frequenciesEditor = new FrequencyEdt(getShell());
 			shell.setCursor(shell.getDisplay().getSystemCursor(SWT.CURSOR_WAIT));   	
 			m_frequenciesEditor.open(this);
-	    	if (!shell.isDisposed()) shell.setCursor(shell.getDisplay().getSystemCursor(s_standardCursor));			
+	    	if (!shell.isDisposed()) shell.setCursor(m_standardCursor);			
 		}
 	}
 	
