@@ -63,6 +63,7 @@ public class TwinView extends Composite {
 		closeHistogram();
 		closeFrequencies();
 		m_areaCursor.dispose();
+		super.dispose();
 	}
 	
 	public boolean isEmpty() {

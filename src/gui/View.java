@@ -151,6 +151,7 @@ public class View extends Canvas {
 	@Override
 	public void dispose() {
 		m_clipboard.dispose();
+		super.dispose();
 	}
 	
 	public ImageData getImageData() {

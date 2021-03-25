@@ -488,10 +488,10 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				if (m_views.hasSecondView()) {
 					// swap images
-					swapViews();
-
-					// close output view
-					m_views.close(false);
+					if (swapViews()) {
+						// close output view
+						m_views.close(false);						
+					}
 				} else {
 					// update title
 					m_shell.setText(Picsi.APP_NAME);
@@ -1183,14 +1183,14 @@ public class MainWindow {
 		m_editor.setVisible(true);
 	}
 	
-	private void swapViews() {
+	private boolean swapViews() {
 		// current output view will become input view
 		// save output
 		Document doc = m_views.getDocument(false);
 		String filename = doc.getFileName();
 		if (filename == null) {
 			// must be saved before
-			if (!saveFile(false, true)) return;
+			if (!saveFile(false, true)) return false;
 			filename = doc.getFileName();
 		}
 		
@@ -1199,5 +1199,6 @@ public class MainWindow {
 		
 		// update title
 		setTitle(filename, doc.getfileType());		
+		return true;
 	}
 }
