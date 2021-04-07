@@ -193,8 +193,8 @@ public class TwinView extends Composite {
 	public void showImageInFirstView(ImageData imageData, String fileName) {
 		if (imageData == null) return;
 		
+		m_doc1.setFileName(fileName); // must be called before setImageData because of setDragSource
 		m_view1.setImageData(imageData);
-		m_doc1.setFileName(fileName);
 		layout();
 		refresh(false);
 		m_mainWnd.notifyAllMenus();
@@ -205,8 +205,8 @@ public class TwinView extends Composite {
 		
 		if (!hasSecondView()) split();
 		if (hasSecondView()) {
+			m_doc2.setFileName(null); // must be called before setImageData because of setDragSource
 			m_view2.setImageData(imageData);
-			m_doc2.setFileName(null);
 			layout();
 			refresh(false);
 			m_mainWnd.notifyAllMenus();

@@ -19,6 +19,8 @@ import org.eclipse.swt.printing.Printer;
 import org.eclipse.swt.printing.PrinterData;
 import org.eclipse.swt.widgets.*;
 
+import files.Document;
+
 /**
  * Viewer class
  * 
@@ -522,25 +524,25 @@ public class View extends Canvas {
 	private void setDragSource(boolean first) {
 		if (m_dragSource == null) {
 			// add drag and drop source
-			String filename = m_twins.getDocument(first).getFileName();
 			m_dragSource = new DragSource(this, DND.DROP_COPY);
-			Transfer[] types = (filename != null && !filename.isEmpty()) ? new Transfer[] { FileTransfer.getInstance(), ImageTransfer.getInstance() } : new Transfer[] { ImageTransfer.getInstance() };
-			m_dragSource.setTransfer(types);
 			m_dragSource.addDragListener(new DragSourceListener() {
 				@Override
 				public void dragStart(DragSourceEvent event) {
-					//System.out.println("Start Transfer");
+					//System.out.println("Start Transfer: " + first);
 				}
 				@Override
 				public void dragSetData(DragSourceEvent event) {
-					String filename = m_twins.getDocument(first).getFileName(); // file name can change, so use current file name
+					final Document doc = m_twins.getDocument(first);
+					final String filename = doc.getFileName(); // file name can change, so use current file name
 					
-					if (FileTransfer.getInstance().isSupportedType(event.dataType) && filename != null) {
-						//System.out.println("File Transfer");
+					if (FileTransfer.getInstance().isSupportedType(event.dataType) && doc.hasFile() && filename != null) {
+						//System.out.println("File Transfer: " + filename);
 						event.data = new String[] { filename };
 					} else if (ImageTransfer.getInstance().isSupportedType(event.dataType)) {
 						//System.out.println("Image Transfer");
 						event.data = m_imageData;
+					} else {
+						event.doit = false;
 					}
 				}
 				@Override
@@ -548,6 +550,17 @@ public class View extends Canvas {
 				}			
 			});
 		}
-	}
+		
+		if (m_dragSource != null) {
+			final Document doc = m_twins.getDocument(first);
 
+			if (doc.hasFile()) {
+				//System.out.println("Set FileTransfer");
+				m_dragSource.setTransfer(new Transfer[] { FileTransfer.getInstance() });	
+			} else {
+				//System.out.println("Set ImageTransfer");
+				m_dragSource.setTransfer(new Transfer[] { ImageTransfer.getInstance() });				
+			}
+		}
+	}
 }

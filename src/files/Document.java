@@ -10,7 +10,7 @@ import org.eclipse.swt.graphics.*;
  *
  */
 public class Document {
-	private String m_fileName;	// image file name
+	private String m_fileName;	// image file path
 	private IImageFile m_file;	// image file
 	private int m_fileType;		// image file type
 	
@@ -91,6 +91,14 @@ public class Document {
 	}
 	
 	/**
+	 * Returns true if a file exists
+	 * @return
+	 */
+	public boolean hasFile() {
+		return m_file != null;
+	}
+	
+	/**
 	 * Converts the given image data from binary to ASCII and writes it to the given text area 
 	 * @param image image data
 	 * @param text text area
@@ -108,5 +116,6 @@ public class Document {
 	 */
 	public void setFileName(String fileName) {
 		m_fileName = fileName;
+		m_file = null;
 	}
 }

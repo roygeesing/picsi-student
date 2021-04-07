@@ -89,7 +89,7 @@ public class MainWindow {
 			// enable drag and drop file (drop target)
 			m_shell.setDragDetect(true);
 			DropTarget dt = new DropTarget(m_shell, DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_DEFAULT);
-			dt.setTransfer(new Transfer[] { FileTransfer.getInstance(), ImageTransfer.getInstance() });
+			dt.setTransfer(new Transfer[] { ImageTransfer.getInstance(), FileTransfer.getInstance() });
 			dt.addDropListener(new DropTargetAdapter() {
 				@Override
 				public void dragEnter(DropTargetEvent event) {
@@ -101,9 +101,9 @@ public class MainWindow {
 					}
 					// will accept image but prefer to have files dropped
 					for(TransferData d: event.dataTypes) {
-						if (dt.getTransfer()[0].isSupportedType(d)) {
+						if (FileTransfer.getInstance().isSupportedType(d)) {
+							// FileTransfer is preferred
 							event.currentDataType = d;
-							// event.currentDataType = event.dataTypes[1]; // just for testing ImageTransfer mode
 				            if (event.detail != DND.DROP_COPY) {
 				            	event.detail = DND.DROP_NONE;
 				            }
@@ -112,19 +112,21 @@ public class MainWindow {
 				}
 				@Override
 				public void drop(DropTargetEvent event) {
-			        if (dt.getTransfer()[0].isSupportedType(event.currentDataType)) {
-			        	// file transfer
-			        	String[] files = (String[])event.data;
-			        	//System.out.println(files[0]);
-						m_mru.moveFileNameToTop(-1, files[0]);
-						updateFile(files[0]);
-			        } else if (dt.getTransfer()[1].isSupportedType(event.currentDataType)) {
-			        	// image transfer
-			        	ImageData inData = (ImageData)event.data;
-						String name = "Image";
-						m_views.showImageInFirstView(inData, name);
-						setTitle(name, SWT.IMAGE_UNDEFINED);
-			        }
+					if (event.data != null) {
+				        if (ImageTransfer.getInstance().isSupportedType(event.currentDataType)) {
+				        	// image transfer
+				        	ImageData inData = (ImageData)event.data;
+							String name = "Image";
+							m_views.showImageInFirstView(inData, name);
+							setTitle(name, SWT.IMAGE_UNDEFINED);
+				        } else if (FileTransfer.getInstance().isSupportedType(event.currentDataType)) {
+				        	// file transfer
+				        	String[] files = (String[])event.data;
+				        	//System.out.println(files[0]);
+							m_mru.moveFileNameToTop(-1, files[0]);
+							updateFile(files[0]);
+				        }
+					}
 				}			
 			});			
 		}
@@ -1175,7 +1177,7 @@ public class MainWindow {
 	 */
 	private boolean saveFile(boolean first, boolean saveAs) {
 		final int imageType = m_views.getView(first).getImageType();
-		final String fileName = m_views.getDocument(first).getFileName();
+		String fileName = m_views.getDocument(first).getFileName();
 		FileInfo si = null;
 		
 		if (saveAs || fileName == null) {
