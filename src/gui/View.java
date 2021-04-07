@@ -3,9 +3,7 @@ import main.Picsi;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTError;
-import org.eclipse.swt.dnd.Clipboard;
-import org.eclipse.swt.dnd.TextTransfer;
-import org.eclipse.swt.dnd.Transfer;
+import org.eclipse.swt.dnd.*;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.MouseEvent;
@@ -40,6 +38,7 @@ public class View extends Canvas {
 	private boolean m_preventVscroll = false;
 	private Clipboard m_clipboard;
 	private String m_clipboardText;
+	private DragSource m_dragSource;
 	
 	public View(TwinView compo) {
 		super(compo, SWT.V_SCROLL | SWT.H_SCROLL | SWT.NO_REDRAW_RESIZE | SWT.NO_BACKGROUND);
@@ -145,7 +144,38 @@ public class View extends Canvas {
 					m_preventVscroll = true;
 				}
 			}
-		});
+		});		
+	}
+	
+	public void setDragSource(boolean first) {
+		if (m_dragSource == null) {
+			// add drag and drop source
+			String filename = m_twins.getDocument(first).getFileName();
+			m_dragSource = new DragSource(this, DND.DROP_COPY);
+			Transfer[] types = (filename != null && !filename.isEmpty()) ? new Transfer[] { FileTransfer.getInstance(), ImageTransfer.getInstance() } : new Transfer[] { ImageTransfer.getInstance() };
+			m_dragSource.setTransfer(types);
+			m_dragSource.addDragListener(new DragSourceListener() {
+				@Override
+				public void dragStart(DragSourceEvent event) {
+					//System.out.println("Start Transfer");
+				}
+				@Override
+				public void dragSetData(DragSourceEvent event) {
+					String filename = m_twins.getDocument(first).getFileName(); // file name can change, so use current file name
+					
+					if (FileTransfer.getInstance().isSupportedType(event.dataType) && filename != null) {
+						//System.out.println("File Transfer");
+						event.data = new String[] { filename };
+					} else if (ImageTransfer.getInstance().isSupportedType(event.dataType)) {
+						//System.out.println("Image Transfer");
+						event.data = m_imageData;
+					}
+				}
+				@Override
+				public void dragFinished(DragSourceEvent event) {
+				}			
+			});
+		}
 	}
 
 	@Override
@@ -250,6 +280,7 @@ public class View extends Canvas {
 			m_image = null;
 		}
 		updateScrollBars(true);
+		setDragSource(this == m_twins.getView(true));
 	}
 	
 	public void scroll(int scrollPosX, int scrollPosY) {

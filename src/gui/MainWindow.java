@@ -1,10 +1,12 @@
 package gui;
 
 import java.io.IOException;
+
 import javax.swing.JTextArea;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTError;
 import org.eclipse.swt.SWTException;
+import org.eclipse.swt.dnd.*;
 import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.layout.*;
@@ -46,7 +48,7 @@ public class MainWindow {
 	 * @wbp.parser.entryPoint
 	 */
 	public Shell open(Display dpy) {
-		// create a window and set its title.
+		// create a window and set its title
 		m_display = dpy;
 		m_shell = new Shell(m_display);
 		{
@@ -59,7 +61,7 @@ public class MainWindow {
 			m_shell.setLayout(gridLayout);
 			m_shell.setCursor(m_display.getSystemCursor(SWT.CURSOR_CROSS)); // a wait-cursor can be used only if the cross-cursor is set for the shell instead of the view
 			
-			// Hook listeners.
+			// hook listeners
 			m_shell.addShellListener(new ShellAdapter() {
 				@Override
 				public void shellClosed(ShellEvent e) {
@@ -69,7 +71,7 @@ public class MainWindow {
 			m_shell.addDisposeListener(new DisposeListener() {
 				@Override
 				public void widgetDisposed(DisposeEvent e) {
-					// Clean up.
+					// clean up
 					if (m_views != null) m_views.dispose();
 					if (m_editor != null) m_editor.dispose();
 				}
@@ -83,6 +85,48 @@ public class MainWindow {
 			
 			// set title
 			m_shell.setText(Picsi.APP_NAME);
+
+			// enable drag and drop file (drop target)
+			m_shell.setDragDetect(true);
+			DropTarget dt = new DropTarget(m_shell, DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_DEFAULT);
+			dt.setTransfer(new Transfer[] { FileTransfer.getInstance(), ImageTransfer.getInstance() });
+			dt.addDropListener(new DropTargetAdapter() {
+				@Override
+				public void dragEnter(DropTargetEvent event) {
+					if (event.detail == DND.DROP_DEFAULT) {
+						if ((event.operations & DND.DROP_COPY) != 0) {
+							// set copy as default operation
+							event.detail = DND.DROP_COPY;
+						}
+					}
+					// will accept image but prefer to have files dropped
+					for(TransferData d: event.dataTypes) {
+						if (dt.getTransfer()[0].isSupportedType(d)) {
+							event.currentDataType = d;
+							// event.currentDataType = event.dataTypes[1]; // just for testing ImageTransfer mode
+				            if (event.detail != DND.DROP_COPY) {
+				            	event.detail = DND.DROP_NONE;
+				            }
+						}
+					}
+				}
+				@Override
+				public void drop(DropTargetEvent event) {
+			        if (dt.getTransfer()[0].isSupportedType(event.currentDataType)) {
+			        	// file transfer
+			        	String[] files = (String[])event.data;
+			        	//System.out.println(files[0]);
+						m_mru.moveFileNameToTop(-1, files[0]);
+						updateFile(files[0]);
+			        } else if (dt.getTransfer()[1].isSupportedType(event.currentDataType)) {
+			        	// image transfer
+			        	ImageData inData = (ImageData)event.data;
+						String name = "Image";
+						m_views.showImageInFirstView(inData, name);
+						setTitle(name, SWT.IMAGE_UNDEFINED);
+			        }
+				}			
+			});			
 		}
 		
 		// create twin view: must be done before createMenuBar, because of dynamic image processing menu items
