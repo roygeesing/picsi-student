@@ -147,37 +147,6 @@ public class View extends Canvas {
 		});		
 	}
 	
-	public void setDragSource(boolean first) {
-		if (m_dragSource == null) {
-			// add drag and drop source
-			String filename = m_twins.getDocument(first).getFileName();
-			m_dragSource = new DragSource(this, DND.DROP_COPY);
-			Transfer[] types = (filename != null && !filename.isEmpty()) ? new Transfer[] { FileTransfer.getInstance(), ImageTransfer.getInstance() } : new Transfer[] { ImageTransfer.getInstance() };
-			m_dragSource.setTransfer(types);
-			m_dragSource.addDragListener(new DragSourceListener() {
-				@Override
-				public void dragStart(DragSourceEvent event) {
-					//System.out.println("Start Transfer");
-				}
-				@Override
-				public void dragSetData(DragSourceEvent event) {
-					String filename = m_twins.getDocument(first).getFileName(); // file name can change, so use current file name
-					
-					if (FileTransfer.getInstance().isSupportedType(event.dataType) && filename != null) {
-						//System.out.println("File Transfer");
-						event.data = new String[] { filename };
-					} else if (ImageTransfer.getInstance().isSupportedType(event.dataType)) {
-						//System.out.println("Image Transfer");
-						event.data = m_imageData;
-					}
-				}
-				@Override
-				public void dragFinished(DragSourceEvent event) {
-				}			
-			});
-		}
-	}
-
 	@Override
 	public void dispose() {
 		m_clipboard.dispose();
@@ -548,6 +517,37 @@ public class View extends Canvas {
 
 	private int zoomedHeight() {
 		return (m_imageData == null) ? 0 : image2Client(m_imageData.height);
+	}
+
+	private void setDragSource(boolean first) {
+		if (m_dragSource == null) {
+			// add drag and drop source
+			String filename = m_twins.getDocument(first).getFileName();
+			m_dragSource = new DragSource(this, DND.DROP_COPY);
+			Transfer[] types = (filename != null && !filename.isEmpty()) ? new Transfer[] { FileTransfer.getInstance(), ImageTransfer.getInstance() } : new Transfer[] { ImageTransfer.getInstance() };
+			m_dragSource.setTransfer(types);
+			m_dragSource.addDragListener(new DragSourceListener() {
+				@Override
+				public void dragStart(DragSourceEvent event) {
+					//System.out.println("Start Transfer");
+				}
+				@Override
+				public void dragSetData(DragSourceEvent event) {
+					String filename = m_twins.getDocument(first).getFileName(); // file name can change, so use current file name
+					
+					if (FileTransfer.getInstance().isSupportedType(event.dataType) && filename != null) {
+						//System.out.println("File Transfer");
+						event.data = new String[] { filename };
+					} else if (ImageTransfer.getInstance().isSupportedType(event.dataType)) {
+						//System.out.println("Image Transfer");
+						event.data = m_imageData;
+					}
+				}
+				@Override
+				public void dragFinished(DragSourceEvent event) {
+				}			
+			});
+		}
 	}
 
 }
