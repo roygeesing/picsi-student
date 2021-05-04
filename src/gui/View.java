@@ -34,17 +34,25 @@ public class View extends Canvas {
 	private int m_scrollPosX, m_scrollPosY; // origin of the visible view (= pixel when zoom = 1)
 	private Image m_image;					// device dependent image used in painting
 	private ImageData m_imageData;			// device independent image used in image processing
-	private int m_imageType;
 	private PrinterData m_printerData;
 	private float m_zoom = 1.0f;
-	private boolean m_preventVscroll = false;
 	private Clipboard m_clipboard;
 	private String m_clipboardText;
 	private DragSource m_dragSource;
+	private boolean m_firstView;
 	
-	public View(TwinView compo) {
+	/**
+	 * corresponds to getPixelData() return structure
+	 *
+	 */
+	public enum PixelInfo {
+		X, Y, StackIndex, Pixel, RGB, PixelHex, RGBformatted, RGBnormalized 
+	}
+	
+	public View(TwinView compo, boolean first) {
 		super(compo, SWT.V_SCROLL | SWT.H_SCROLL | SWT.NO_REDRAW_RESIZE | SWT.NO_BACKGROUND);
 		m_twins = compo;
+		m_firstView = first;
 		
 		setBackground(new Color(getDisplay(), 128, 128, 255));
 		m_clipboard = new Clipboard(getDisplay());
@@ -65,7 +73,7 @@ public class View extends Canvas {
 		horizontal.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
-				int x = -((ScrollBar)event.widget).getSelection();
+				final int x = -((ScrollBar)event.widget).getSelection();
 				scrollHorizontally(x);
 				m_twins.synchronizeHorizontally(View.this, x);
 			}
@@ -77,14 +85,10 @@ public class View extends Canvas {
 		vertical.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
-				// in a scrollview the mouse wheel automatically sends a VScroll event
-				if (m_preventVscroll) {
-					m_preventVscroll = false;
-				} else {
-					int y = -((ScrollBar)event.widget).getSelection();
-					scrollVertically(y);
-					m_twins.synchronizeVertically(View.this, y);
-				}
+				final int y = -((ScrollBar)event.widget).getSelection();
+				scrollVertically(y);
+				m_twins.synchronizeVertically(View.this, y);
+				vertical.setIncrement(1); // because scrolling by mouse wheel has been accelerated
 			}
 		});
 		
@@ -112,7 +116,7 @@ public class View extends Canvas {
 						data = getPixelInfoAt(event.x,  event.y, 0);
 						m_twins.m_mainWnd.showColorForPixel(data, false);
 					}
-					if (data != null) m_clipboardText = (String)data[4];
+					if (data != null) m_clipboardText = (String)data[View.PixelInfo.RGBformatted.ordinal()];
 				}
 			}
 		});
@@ -137,13 +141,18 @@ public class View extends Canvas {
 		addMouseWheelListener(new MouseWheelListener() {
 			@Override
 			public void mouseScrolled(MouseEvent event) {
-				if (m_imageData != null && !m_twins.hasAutoZoom()) {
-					if (event.count < 0) {
-						zoom(1.5f, event.x, event.y);
-					} else if (event.count > 0) {
-						zoom(1/1.5f, event.x, event.y);
+				if (event.stateMask == SWT.CTRL) {
+					// zooming
+					if (m_imageData != null && !m_twins.hasAutoZoom()) {
+						if (event.count < 0) {
+							zoom(1.5f, event.x, event.y);
+						} else if (event.count > 0) {
+							zoom(1/1.5f, event.x, event.y);
+						}
 					}
-					m_preventVscroll = true;
+				} else {
+					// vertical scrolling
+					getVerticalBar().setIncrement(Math.abs(event.count*5));
 				}
 			}
 		});		
@@ -153,10 +162,6 @@ public class View extends Canvas {
 	public void dispose() {
 		m_clipboard.dispose();
 		super.dispose();
-	}
-	
-	public ImageData getImageData() {
-		return m_imageData;
 	}
 	
 	public boolean isPortrait() {
@@ -221,10 +226,6 @@ public class View extends Canvas {
 		return m_printerData;
 	}
 	
-	public int getImageType() {
-		return m_imageType;
-	}
-	
 	public int getImageWidth() {
 		return m_imageData.width;
 	}
@@ -245,13 +246,17 @@ public class View extends Canvas {
 		if (m_image != null) m_image.dispose();
 		m_imageData = imageData;
 		if (m_imageData != null) {
-			m_imageType = Picsi.determineImageType(m_imageData);
 			m_image = new Image(getDisplay(), imageData);
+			setDragSource();
 		} else {
 			m_image = null;
+			if (m_dragSource != null ) {
+				// delete drag source
+				m_dragSource.dispose();
+				m_dragSource = null;
+			}
 		}
 		updateScrollBars(true);
-		setDragSource(this == m_twins.getView(true));
 	}
 	
 	public void scroll(int scrollPosX, int scrollPosY) {
@@ -360,6 +365,13 @@ public class View extends Canvas {
 		if (redraw) redraw();
 	}
 	
+	/**
+	 * Return pixel information at mouse position (x,y)
+	 * @param x
+	 * @param y
+	 * @param radius used for mean color
+	 * @return formatted data according to PixelInfo enumeration
+	 */
 	public Object[] getPixelInfoAt(int x, int y, int radius) {
 		if (m_imageData == null) return null;
 		
@@ -372,7 +384,7 @@ public class View extends Canvas {
 			
 			if (radius > 0) {
 				// compute average color
-				rgb.red = rgb.green = rgb.blue = 0;
+				int r = 0, g = 0, b = 0; // don't use rgb for summation, because it results in strange side effect
 				int cnt = 0;
 				
 				for(int v = y - radius; v <= y + radius; v++) {
@@ -380,18 +392,19 @@ public class View extends Canvas {
 						for(int u = x - radius; u <= x + radius; u++) {
 							if (u >= 0 && u < m_imageData.width) {
 								RGB c = m_imageData.palette.getRGB(m_imageData.getPixel(u, v));
-								rgb.red += c.red;
-								rgb.green += c.green;
-								rgb.blue += c.blue;
+								//System.out.println("(" + u + ',' + v + ") = " + m_imageData.getPixel(u, v));
+								r += c.red;
+								g += c.green;
+								b += c.blue;
 								cnt++;
 							}
 						}
 					}
 				}
 				
-				rgb.red /= cnt;
-				rgb.green /= cnt;
-				rgb.blue /= cnt;
+				rgb.red = r / cnt;
+				rgb.green = g / cnt;
+				rgb.blue = b / cnt;
 				pixel = m_imageData.palette.getPixel(rgb);
 			}
 			
@@ -401,25 +414,26 @@ public class View extends Canvas {
 				hasAlpha = true;
 				alphaValue = m_imageData.getAlpha(x, y);
 			}
-			String rgbMessageFormat = (hasAlpha) ? "RGBA '{'{0}, {1}, {2}, {3}'}'" : "RGB '{'{0}, {1}, {2}'}'";
-			String rgbHexMessageFormat = (hasAlpha) ? "0x{0}, 0x{1}, 0x{2}, 0x{3}" : "0x{0}, 0x{1}, 0x{2}";
+			String rgbMessageFormat = (hasAlpha) ? "RGBA '{'{0},{1},{2},{3}'}'" : "RGB '{'{0},{1},{2}'}'";
+			String rgbNormalizedFormat = (hasAlpha) ? "{0},{1},{2},{3}" : "{0},{1},{2}";
 			Object[] rgbArgs = {
 					Integer.toString(rgb.red),
 					Integer.toString(rgb.green),
 					Integer.toString(rgb.blue),
 					Integer.toString(alphaValue)
 			};
-			Object[] rgbHexArgs = {
-					Integer.toHexString(rgb.red),
-					Integer.toHexString(rgb.green),
-					Integer.toHexString(rgb.blue),
-					Integer.toHexString(alphaValue)
+			Object[] rgbNormalizedArgs = {
+					String.format("%.2f", rgb.red/255.0),
+					String.format("%.2f", rgb.green/255.0),
+					String.format("%.2f", rgb.blue/255.0),
+					String.format("%.2f", alphaValue/255.0)
 			};
+			// return data in order defined in PixelInfo enumeration
 			Object[] args = {
-					x, y, pixel,
+					x, y, 0, pixel, rgb, 
 					Integer.toHexString(pixel),
 					Picsi.createMsg(rgbMessageFormat, rgbArgs),
-					Picsi.createMsg(rgbHexMessageFormat, rgbHexArgs),
+					Picsi.createMsg(rgbNormalizedFormat, rgbNormalizedArgs),
 					(pixel == m_imageData.transparentPixel) ? "(transparent)" : ""};
 			return args;
 		} else {
@@ -521,7 +535,7 @@ public class View extends Canvas {
 		return (m_imageData == null) ? 0 : image2Client(m_imageData.height);
 	}
 
-	private void setDragSource(boolean first) {
+	private void setDragSource() {
 		if (m_dragSource == null) {
 			// add drag and drop source
 			m_dragSource = new DragSource(this, DND.DROP_COPY);
@@ -532,13 +546,13 @@ public class View extends Canvas {
 				}
 				@Override
 				public void dragSetData(DragSourceEvent event) {
-					final Document doc = m_twins.getDocument(first);
+					final Document doc = m_twins.getDocument(m_firstView);
 					final String filename = doc.getFileName(); // file name can change, so use current file name
 					
 					if (FileTransfer.getInstance().isSupportedType(event.dataType) && doc.hasFile() && filename != null) {
 						//System.out.println("File Transfer: " + filename);
 						event.data = new String[] { filename };
-					} else if (ImageTransfer.getInstance().isSupportedType(event.dataType)) {
+					} else if (ImageTransfer.getInstance().isSupportedType(event.dataType) && doc.hasImage()) {
 						//System.out.println("Image Transfer");
 						event.data = m_imageData;
 					} else {
@@ -552,7 +566,7 @@ public class View extends Canvas {
 		}
 		
 		if (m_dragSource != null) {
-			final Document doc = m_twins.getDocument(first);
+			final Document doc = m_twins.getDocument(m_firstView);
 
 			if (doc.hasFile()) {
 				//System.out.println("Set FileTransfer");

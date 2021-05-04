@@ -34,7 +34,7 @@ public class Picsi {
 	public static final int IMAGE_TYPE_GRAY32 = 16;
 
 	public static final String APP_NAME = "FHNW Picsi";
-	public static final String APP_VERSION = "2.12.2021.14 (Student)"; // major.minor.year.week
+	public static final String APP_VERSION = "2.13.2021.18 (Student)"; // major.minor.year.week
 	public static final String APP_COPYRIGHT = "Copyright \u00a9 " + new GregorianCalendar().get(Calendar.YEAR) 
 			+ "\nUniversity of Applied Sciences Northwestern Switzerland\nFHNW School of Engineering, IMVS\nWindisch, Switzerland";
 	public static final String APP_URL = "https://gitlab.fhnw.ch/christoph.stamm/picsi-student";
@@ -166,7 +166,6 @@ public class Picsi {
 	 * @return
 	 */
 	public static String imageTypeString(int imageType) {
-		// check system file types
 		switch(imageType) {
 		case IMAGE_TYPE_BINARY: return "Binary";
 		case IMAGE_TYPE_GRAY: return "Gray";

@@ -1,7 +1,10 @@
 package files;
 import javax.swing.JTextArea;
 
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.*;
+
+import main.Picsi;
 
 /**
  * Image document class
@@ -13,34 +16,47 @@ public class Document {
 	private String m_fileName;	// image file path
 	private IImageFile m_file;	// image file
 	private int m_fileType;		// image file type
+	private ImageData m_image;	// image data
+	private int m_imageType;	// image type
+	
+	public Document() {
+		m_fileType = SWT.IMAGE_UNDEFINED;
+	}
 	
 	/**
+	 * Clear document.
+	 */
+	public void clear() {
+		m_fileName = null;
+		m_file = null;
+		m_image = null;
+		m_fileType = SWT.IMAGE_UNDEFINED;
+		m_imageType = 0;
+	}
+
+	/**
 	 * Loads an image file
-	 * @param filename
+	 * @param fileName
 	 * @param fileType
-	 * @param display
-	 * @return imageData
 	 * @throws Exception
 	 */
-	public ImageData load(String filename, int fileType) throws Exception {
+	public void load(String fileName, int fileType) throws Exception {
 		m_fileType = fileType;
 		m_file = ImageFiles.createImageFile(m_fileType);
+		
 		if (m_file != null) {
-			m_fileName = filename;
-			return m_file.read(filename);
+			m_fileName = fileName;
+			setImage(m_file.read(fileName));
 		}
-		return null;
 	}
 	
 	/**
 	 * Saves an image file
-	 * @param image
-	 * @param imageType
 	 * @param filename
 	 * @param fileType
 	 * @throws Exception
 	 */
-	public void save(ImageData imageData, int imageType, String filename, int fileType) throws Exception {
+	public void save(String filename, int fileType) throws Exception {
 		if (filename == null) {
 			if (m_file != null && m_fileName != null && m_fileType >= 0) {
 				// save with existing file name and file type
@@ -61,8 +77,24 @@ public class Document {
 		}
 		if (m_file != null) {
 			m_fileName = filename;
-			m_file.save(filename, fileType, imageData, imageType);
+			m_file.save(filename, fileType, m_image, m_imageType);
 		}
+	}
+	
+	/**
+	 * Returns image
+	 * @return
+	 */
+	public ImageData getImage() {
+		return m_image;
+	}
+	
+	/**
+	 * Returns the image type of this image
+	 * @return
+	 */
+	public int getImageType() {
+		return m_imageType;
 	}
 	
 	/**
@@ -86,7 +118,7 @@ public class Document {
 	 * Returns the file type of this image file
 	 * @return
 	 */
-	public int getfileType() {
+	public int getFileType() {
 		return m_fileType;
 	}
 	
@@ -96,6 +128,14 @@ public class Document {
 	 */
 	public boolean hasFile() {
 		return m_file != null;
+	}
+	
+	/**
+	 * Returns true if an image exists
+	 * @return
+	 */
+	public boolean hasImage() {
+		return m_image != null;
 	}
 	
 	/**
@@ -118,4 +158,14 @@ public class Document {
 		m_fileName = fileName;
 		m_file = null;
 	}
+
+	/**
+	 * Set or reset image
+	 * @param imageData
+	 */
+	public void setImage(ImageData imageData) {
+		m_image = imageData;
+		m_imageType = Picsi.determineImageType(imageData);
+	}
+
 }

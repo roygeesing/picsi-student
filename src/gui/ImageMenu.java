@@ -92,11 +92,13 @@ public class ImageMenu {
 	}
 	
 	private void run(MenuItem mi) {
-		ImageData output = null;
 		try {
 			IImageProcessor proc = (IImageProcessor)mi.getData();
 			
-			output = proc.run(m_views.getImage(true), m_views.getImageType(true));
+			ImageData output = proc.run(m_views.getImage(true), m_views.getImageType(true));
+			if (output != null) {
+				m_views.showImageInSecondView(output);
+			}		
 		} catch(Throwable e) {
 			String text = mi.getText();
 			int last = text.indexOf('\t');
@@ -104,8 +106,5 @@ public class ImageMenu {
 			String location = text.substring(0, last).replace("&", "");
 			m_views.m_mainWnd.showErrorDialog("ImageProcessing", location, e);
 		}						
-		if (output != null) {
-			m_views.showImageInSecondView(output);
-		}		
 	}
 }

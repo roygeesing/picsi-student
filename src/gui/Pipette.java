@@ -90,8 +90,7 @@ public class Pipette {
 				values = m_view.getPixelInfoAt(m_x, m_y, 0); 
 			}
 			if (values != null) {
-				int pixel = (int)values[2];
-				RGB rgb = m_view.getImageData().palette.getRGB(pixel);
+				RGB rgb = (RGB)values[View.PixelInfo.RGB.ordinal()];
 				return (m_view.isDisposed()) ? null : rgb;
 			} else {
 				return null;

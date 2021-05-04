@@ -9,6 +9,8 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.*;
 
 import files.Document;
+import files.ImageFiles;
+import main.Picsi;
 
 /**
  * Twin viewer class
@@ -44,7 +46,7 @@ public class TwinView extends Composite {
 		setLayout(new FillLayout());
 		
 		m_doc1 = new Document();
-		m_view1 = new View(this);
+		m_view1 = new View(this, true);
 		
 		try {
 			ImageData image = new ImageData(getShell().getClass().getClassLoader().getResource("images/areaHS.png").openStream());
@@ -67,7 +69,7 @@ public class TwinView extends Composite {
 	}
 	
 	public boolean isEmpty() {
-		return m_view1.getImageData() == null;
+		return m_doc1.getImage() == null;
 	}
 	
 	public View getView(boolean first) {
@@ -82,8 +84,9 @@ public class TwinView extends Composite {
 		return (first) ? m_doc1 : m_doc2;
 	}
 	
-	public void load(String filename, int fileType) throws Exception {
-		m_view1.setImageData(m_doc1.load(filename, fileType));
+	public void load(String fileName, int fileType) throws Exception {
+		m_doc1.load(fileName, fileType);
+		updateFirstView();
 		layout();
 		refresh(false);
 	}
@@ -91,6 +94,7 @@ public class TwinView extends Composite {
 	public void close(boolean first) {
 		if (first) {
 			assert m_view2 == null : "view2 has to be closed first";
+			m_doc1.clear();
 			m_view1.setImageData(null);
 			if (m_colorTable != null) {
 				m_colorTable.close();
@@ -122,13 +126,14 @@ public class TwinView extends Composite {
 		}
 	}
 	
-	public void save(boolean first, String filename, int fileType) throws Exception {
+	public void save(boolean first, String fileName, int fileType) throws Exception {
 		if (first) {
 			assert m_doc1 != null : "m_doc1 is null";
-			m_doc1.save(m_view1.getImageData(), m_view1.getImageType(), filename, fileType);
+			m_doc1.save(fileName, fileType);
+			setTitle(fileName, fileType);
 		} else {
 			assert m_doc2 != null : "m_doc2 is null";
-			m_doc2.save(m_view2.getImageData(), m_view2.getImageType(), filename, fileType);
+			m_doc2.save(fileName, fileType);
 		}
 	}
 	
@@ -164,12 +169,20 @@ public class TwinView extends Composite {
 		return m_synchronized;
 	}
 	
+	public String getFileName(boolean first) {
+		return (first) ? m_doc1.getFileName() : m_doc2.getFileName();
+	}
+	
+	public int getFileType(boolean first) {
+		return (first) ? m_doc1.getFileType() : m_doc2.getFileType();
+	}
+	
 	public ImageData getImage(boolean first) {
-		return (first) ? m_view1.getImageData() : m_view2.getImageData();
+		return (first) ? m_doc1.getImage() : m_doc2.getImage();
 	}
 	
 	public int getImageType(boolean first) {
-		return (first) ? m_view1.getImageType() : m_view2.getImageType();
+		return (first) ? m_doc1.getImageType() : m_doc2.getImageType();
 	}
 	
 	public float getZoomFactor(boolean first) {
@@ -179,25 +192,31 @@ public class TwinView extends Composite {
 	public void swapImages() {
 		assert hasSecondView() : "m_view2 is null";
 		
-		// swap images
-		ImageData tmp = m_view1.getImageData();
-		m_view1.setImageData(m_view2.getImageData());
-		m_view2.setImageData(tmp);
 		// swap documents
 		Document t = m_doc1; m_doc1 = m_doc2; m_doc2 = t;
+		updateFirstView();
+		m_view2.setImageData(m_doc2.getImage());
 		
 		// update dialogs
 		refresh(false);
 	}
 	
+	private void showImage(boolean first) {
+		if (first) {
+			updateFirstView();
+		} else {
+			m_view2.setImageData(m_doc2.getImage());
+		}
+		layout();
+		refresh(false);
+	}
+
 	public void showImageInFirstView(ImageData imageData, String fileName) {
 		if (imageData == null) return;
 		
 		m_doc1.setFileName(fileName); // must be called before setImageData because of setDragSource
-		m_view1.setImageData(imageData);
-		layout();
-		refresh(false);
-		m_mainWnd.notifyAllMenus();
+		m_doc1.setImage(imageData);
+		showImage(true);
 	}
 	
 	public void showImageInSecondView(ImageData imageData) {
@@ -206,13 +225,14 @@ public class TwinView extends Composite {
 		if (!hasSecondView()) split();
 		if (hasSecondView()) {
 			m_doc2.setFileName(null); // must be called before setImageData because of setDragSource
-			m_view2.setImageData(imageData);
-			layout();
-			refresh(false);
-			m_mainWnd.notifyAllMenus();
+			m_doc2.setImage(imageData);
+			showImage(false);
 		}
 	}
 	
+	/**
+	 * Show input image in input and output view
+	 */
 	public void split() {
 		if (hasSecondView()) {
 			// destroy second view
@@ -223,12 +243,28 @@ public class TwinView extends Composite {
 		} else {
 			// create second view
 			m_doc2 = new Document();
-			m_view2 = new View(this);
-			m_view2.setImageData(m_view1.getImageData());
+			m_view2 = new View(this, false);
+			m_view2.setImageData(m_doc1.getImage());
 		}
-		layout();		
+		layout();	
+		refresh(false);
 	}
 	
+	private void updateFirstView() {
+		m_view1.setImageData(m_doc1.getImage());
+		setTitle(m_doc1.getFileName(), m_doc1.getFileType());
+	}
+	
+	/**
+	 * Show image name in title bar
+	 * @param filename
+	 * @param fileType
+	 */
+	private void setTitle(String filename, int fileType) {
+		getShell().setText(Picsi.createMsg(Picsi.APP_NAME + " - {0} ({1} {2})", 
+			new Object[]{filename, Picsi.imageTypeString(getImageType(true)), ImageFiles.fileTypeString(fileType)}));		
+	}
+		
 	@Override
 	public void layout() {
 		if (!isEmpty()) {
@@ -243,6 +279,7 @@ public class TwinView extends Composite {
 	public void refresh(boolean resize) {
 		if (m_autoZoom) setAutoZoom(true);
 		else synchronizeZoomAndScrollPos(m_view1);
+		
 		if (!resize) {
 			if (m_colorTable != null) m_colorTable.update(hasSecondView(), this); 
 			if (m_histogram != null) m_histogram.update(hasSecondView(), this); 
@@ -255,6 +292,7 @@ public class TwinView extends Composite {
 				m_frequenciesEditor.update(this);
 		    	shell.setCursor(cursor);			
 			}
+			m_mainWnd.notifyAllMenus();
 		}
 		//System.out.println("Refresh");
 	}

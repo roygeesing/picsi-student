@@ -11,7 +11,7 @@ import org.eclipse.swt.graphics.ImageData;
 public interface IImageProcessor {
 	/**
 	 * Enables/disables the menu entry
-	 * @param imageType one of the image types define in Globl.IMAGE_TYPE_XXX
+	 * @param imageType one of the image types define in Picsi.IMAGE_TYPE_XXX
 	 * @return true if the menu entry should be enabled for the given image type
 	 */
 	public boolean isEnabled(int imageType);
@@ -19,8 +19,8 @@ public interface IImageProcessor {
 	/**
 	 * Runs the image processing routine
 	 * @param inData input image data
-	 * @param imageType one of the image types define in Globl.IMAGE_TYPE_XXX
-	 * @return output image or null if the image processing doesn't produce a useful output
+	 * @param imageType one of the image types define in Picsi.IMAGE_TYPE_XXX
+	 * @return output image or null if the image processing cannot produce a useful output
 	 */
 	public ImageData run(final ImageData inData, int imageType);
 }

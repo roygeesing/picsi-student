@@ -15,7 +15,9 @@ import gui.TwinView;
 public class MAGB extends ImageMenu {
 	/**
 	 * Registration of image operations
-	 * @param views
+	 * @param item menu item
+	 * @param views twin view
+	 * @param mru MRU
 	 */
 	public MAGB(MenuItem item, TwinView views, MRU mru) {
 		super(item, views, mru);

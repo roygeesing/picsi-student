@@ -88,6 +88,49 @@ public class ColorSpaces {
 		return outData;
 	}
 	
+	public static ImageData rgbTestImage() {
+		ImageData outData = ImageProcessing.createImage(ImageSize, ImageSize, Picsi.IMAGE_TYPE_RGB);
+		
+		final int steps = 14;
+		final int s = (ImageSize*9/10/steps)*steps;
+		final int q = s/steps;
+		final int margin = (ImageSize - s)/2;
+
+		for(int i = 0; i < steps; i += 2) {
+			final int channels = 1 + i/2;
+			
+			// blocks
+			Parallel.For(i*q, i*q + q, v -> {
+				RGB rgb = new RGB(0,0,0);
+				
+				for (int u = 0; u < s; u++) {
+					final int p = ((channels & 1) != 0) ? (1 + u/q)*255/(steps) : (1 + (s - u)/q)*255/(steps);
+					if ((channels & 1) != 0) rgb.red = p;
+					if ((channels & 2) != 0) rgb.green = p;
+					if ((channels & 4) != 0) rgb.blue = p;
+					final int px = outData.palette.getPixel(rgb);
+					outData.setPixel(u + margin, v + margin, px);
+				}
+			});
+			
+			// sweep
+			Parallel.For(i*q + q, i*q + 2*q, v -> {
+				RGB rgb = new RGB(0,0,0);
+				
+				for (int u = 0; u < s; u++) {
+					final int p = ((channels & 1) != 0) ? 256*u/s : 256*(s - u)/s;
+					if ((channels & 1) != 0) rgb.red = p;
+					if ((channels & 2) != 0) rgb.green = p;
+					if ((channels & 4) != 0) rgb.blue = p;
+					final int px = outData.palette.getPixel(rgb);
+					outData.setPixel(u + margin, v + margin, px);
+				}
+			});
+		}
+				
+		return outData;
+	}
+	
 	public static ImageData rgbCube(boolean whiteOnTop) {
 		ImageData outData = ImageProcessing.createImage(ImageSize, ImageSize, Picsi.IMAGE_TYPE_RGB);
 		

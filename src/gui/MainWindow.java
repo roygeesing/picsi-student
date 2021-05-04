@@ -32,7 +32,7 @@ public class MainWindow {
 	
 	private final MRU m_mru = new MRU(this);
 
-	private Shell m_shell;		// subclassing of Shell is not allowed, therefore containing
+	private Shell m_shell;		// sub-classing of Shell is not allowed, therefore containing
 	private Display m_display;
 	private Editor m_editor;
 	private String m_lastPath; // used to seed the file dialog
@@ -118,7 +118,6 @@ public class MainWindow {
 				        	ImageData inData = (ImageData)event.data;
 							String name = "Image";
 							m_views.showImageInFirstView(inData, name);
-							setTitle(name, SWT.IMAGE_UNDEFINED);
 				        } else if (FileTransfer.getInstance().isSupportedType(event.currentDataType)) {
 				        	// file transfer
 				        	String[] files = (String[])event.data;
@@ -194,9 +193,9 @@ public class MainWindow {
 			m_statusLabel.setText("");
 		} else {
 			if (average) {
-				m_statusLabel.setText(Picsi.createMsg("Mean color at ({0}, {1}) - pixel {2} [0x{3}] - is {4} [{5}] {6}", args));
+				m_statusLabel.setText(Picsi.createMsg("Mean color at ({0},{1}) - pixel {3} [0x{5}] - is {6} [{7}] {8}", args));
 			} else {
-				m_statusLabel.setText(Picsi.createMsg("Image color at ({0}, {1}) - pixel {2} [0x{3}] - is {4} [{5}] {6}", args));
+				m_statusLabel.setText(Picsi.createMsg("Image color at ({0},{1}) - pixel {3} [0x{5}] - is {6} [{7}] {8}", args));
 			}
 		}
 	}
@@ -374,10 +373,6 @@ public class MainWindow {
 		
 		try {
 			m_views.load(filename, fileType);
-			setTitle(filename, fileType);
-
-			// notify all menus about the opened file
-			notifyAllMenus();
 		} catch (Throwable e) {
 			showErrorDialog("loading", filename, e);
 			retValue = false;
@@ -544,6 +539,10 @@ public class MainWindow {
 
 					// close input view
 					m_views.close(true);
+					
+					// clear status line
+					m_statusLabel.setText("");
+					m_zoomLabel.setText("");
 				}
 				
 				// notify all menus about the closed input
@@ -632,7 +631,6 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				if (!m_views.isEmpty()) {
 					Document doc = m_views.getDocument(true);
-					View view = m_views.getView(true);
 					
 					if (m_views.hasSecondView()) {
 						// ask the user to specify the image to print
@@ -640,7 +638,6 @@ public class MainWindow {
 						int o = OptionPane.showOptionDialog("Choose the image to edit", SWT.ICON_INFORMATION, filterTypes, 0);
 						if (o < 0) return;
 						if (o > 0) {
-							view = m_views.getView(false);
 							doc = m_views.getDocument(false);
 							String filename = doc.getFileName();
 							if (filename == null) {
@@ -652,7 +649,7 @@ public class MainWindow {
 					
 					String filename = doc.getFileName();
 					if (filename != null) {
-						editFile(doc, view.getImageData(), filename);
+						editFile(doc, doc.getImage(), filename);
 					}
 				}
 			}
@@ -762,7 +759,6 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				String name = "Luminance";
 				m_views.showImageInFirstView(ColorSpaces.grayscale(), name);
-				setTitle(name, SWT.IMAGE_UNDEFINED);
 			}
 		});
 
@@ -773,13 +769,21 @@ public class MainWindow {
 		item.setMenu(rgb);
 
 		item = new MenuItem(rgb, SWT.PUSH);
+		item.setText("Test Image");
+		item.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String name = "RGB Test Image";
+				m_views.showImageInFirstView(ColorSpaces.rgbTestImage(), name);
+			}
+		});
+		item = new MenuItem(rgb, SWT.PUSH);
 		item.setText("White on Top");
 		item.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
 				String name = "RGB Cube White";
 				m_views.showImageInFirstView(ColorSpaces.rgbCube(true), name);
-				setTitle(name, SWT.IMAGE_UNDEFINED);
 			}
 		});
 		item = new MenuItem(rgb, SWT.PUSH);
@@ -789,7 +793,6 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				String name = "RGB Cube Black";
 				m_views.showImageInFirstView(ColorSpaces.rgbCube(false), name);
-				setTitle(name, SWT.IMAGE_UNDEFINED);
 			}
 		});
 
@@ -806,7 +809,6 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				String name = "HSV Top";
 				m_views.showImageInFirstView(ColorSpaces.hsv(true), name);
-				setTitle(name, SWT.IMAGE_UNDEFINED);
 			}
 		});
 		item = new MenuItem(hsv, SWT.PUSH);
@@ -816,7 +818,6 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				String name = "HSV Bottom";
 				m_views.showImageInFirstView(ColorSpaces.hsv(false), name);
-				setTitle(name, SWT.IMAGE_UNDEFINED);
 			}
 		});
 		item = new MenuItem(hsv, SWT.PUSH);
@@ -826,7 +827,6 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				String name = "HSV Wheel";
 				m_views.showImageInFirstView(ColorSpaces.hsvWheel(), name);
-				setTitle(name, SWT.IMAGE_UNDEFINED);
 			}
 		});
 
@@ -843,7 +843,6 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				String name = "YUV Top";
 				m_views.showImageInFirstView(ColorSpaces.yuv(true), name);
-				setTitle(name, SWT.IMAGE_UNDEFINED);
 			}
 		});
 		item = new MenuItem(yuv, SWT.PUSH);
@@ -853,7 +852,6 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				String name = "YUV Bottom";
 				m_views.showImageInFirstView(ColorSpaces.yuv(false), name);
-				setTitle(name, SWT.IMAGE_UNDEFINED);
 			}
 		});
 
@@ -870,7 +868,6 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				String name = "XYZ White";
 				m_views.showImageInFirstView(ColorSpaces.xyz(true), name);
-				setTitle(name, SWT.IMAGE_UNDEFINED);
 			}
 		});
 		item = new MenuItem(xyz, SWT.PUSH);
@@ -880,7 +877,6 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				String name = "XYZ Black";
 				m_views.showImageInFirstView(ColorSpaces.xyz(false), name);
-				setTitle(name, SWT.IMAGE_UNDEFINED);
 			}
 		});
 		item = new MenuItem(xyz, SWT.PUSH);
@@ -890,7 +886,6 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				String name = "sRGB Gamut";
 				m_views.showImageInFirstView(ColorSpaces.sRGBGamut(), name);
-				setTitle(name, SWT.IMAGE_UNDEFINED);
 			}
 		});
 
@@ -907,7 +902,6 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				String name = "Lab White";
 				m_views.showImageInFirstView(ColorSpaces.lab(true), name);
-				setTitle(name, SWT.IMAGE_UNDEFINED);
 			}
 		});
 		item = new MenuItem(lab, SWT.PUSH);
@@ -917,7 +911,6 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				String name = "Lab Black";
 				m_views.showImageInFirstView(ColorSpaces.lab(false), name);
-				setTitle(name, SWT.IMAGE_UNDEFINED);
 			}
 		});
 		item = new MenuItem(lab, SWT.PUSH);
@@ -927,7 +920,6 @@ public class MainWindow {
 			public void widgetSelected(SelectionEvent event) {
 				String name = "Lab Wheel";
 				m_views.showImageInFirstView(ColorSpaces.labWheel(), name);
-				setTitle(name, SWT.IMAGE_UNDEFINED);
 			}
 		});
 	}
@@ -1062,14 +1054,12 @@ public class MainWindow {
 			@Override
 			public void handleEvent(Event e) {
 				MenuItem[] menuItems = windowMenu.getItems();
-				menuItems[AUTO_ZOOM].setEnabled(!m_views.isEmpty());
 				menuItems[AUTO_ZOOM].setSelection(m_views.hasAutoZoom());
 				menuItems[ORIGINAL_SIZE].setEnabled(!m_views.isEmpty());
 				menuItems[SYNCHRONIZE].setEnabled(!m_views.isEmpty());
 				menuItems[SYNCHRONIZE].setSelection(m_views.isSynchronized());
 				menuItems[SHOWOUTPUT].setEnabled(!m_views.isEmpty());
 				menuItems[SHOWOUTPUT].setSelection(m_views.hasSecondView());
-				menuItems[AVERAGECOLOR].setEnabled(!m_views.isEmpty());
 				menuItems[AVERAGECOLOR].setSelection(m_views.useMeanColor());
 			}
 		});
@@ -1081,10 +1071,8 @@ public class MainWindow {
 		item.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
-				if (!m_views.isEmpty()) {
-					MenuItem item = (MenuItem)event.widget;
-					m_views.setAutoZoom(item.getSelection());
-				}
+				MenuItem item = (MenuItem)event.widget;
+				m_views.setAutoZoom(item.getSelection());
 			}
 		});
 
@@ -1131,7 +1119,7 @@ public class MainWindow {
 		item.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
-				if (!m_views.isEmpty()) m_views.toggleMeanAreaColor();
+				m_views.toggleMeanAreaColor();
 			}
 		});
 	}
@@ -1146,7 +1134,6 @@ public class MainWindow {
 		// Help -> About
 		item = new MenuItem(helpMenu, SWT.PUSH);
 		item.setText("About...");
-		//item.setID(SWT.ID_ABOUT);
 		setIcon(item, "images/picsi.png");
 		item.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -1160,24 +1147,14 @@ public class MainWindow {
 	}
 	
 	/**
-	 * Show image name in title bar
-	 * @param filename
-	 * @param fileType
-	 */
-	private void setTitle(String filename, int fileType) {
-		m_shell.setText(Picsi.createMsg(Picsi.APP_NAME + " - {0} ({1} {2})", 
-			new Object[]{filename, Picsi.imageTypeString(m_views.getImageType(true)), ImageFiles.fileTypeString(fileType)}));		
-	}
-	
-	/**
 	 * Save image in a file
 	 * @param first true: save image in first view, false: save image in second view
 	 * @param saveAs true: let the user choose a file name and offer existing name, false: use existing file name
 	 * @return true if successful
 	 */
 	private boolean saveFile(boolean first, boolean saveAs) {
-		final int imageType = m_views.getView(first).getImageType();
-		String fileName = m_views.getDocument(first).getFileName();
+		final int imageType = m_views.getImageType(first);
+		String fileName = m_views.getFileName(first);
 		FileInfo si = null;
 		
 		if (saveAs || fileName == null) {
@@ -1191,7 +1168,6 @@ public class MainWindow {
 		try {
 			if (si != null) {
 				m_views.save(first, si.filename, si.fileType);
-				if (first) setTitle(si.filename, si.fileType);
 			} else {
 				assert m_views.getDocument(first).getFileName() != null : "doc has no filename";
 				m_views.save(first, null, -1);
@@ -1242,9 +1218,7 @@ public class MainWindow {
 		
 		// swap images
 		m_views.swapImages();
-		
-		// update title
-		setTitle(filename, doc.getfileType());		
+
 		return true;
 	}
 }
