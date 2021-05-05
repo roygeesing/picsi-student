@@ -108,15 +108,7 @@ public class View extends Canvas {
 			public void mouseMove(MouseEvent event) {
 				View.this.setFocus();
 				if (m_image != null) {
-					Object[] data;
-					if (m_twins.useMeanColor()) {
-						data = getPixelInfoAt(event.x,  event.y, MeanAreaRad);
-						m_twins.m_mainWnd.showColorForPixel(data, true);
-					} else {
-						data = getPixelInfoAt(event.x,  event.y, 0);
-						m_twins.m_mainWnd.showColorForPixel(data, false);
-					}
-					if (data != null) m_clipboardText = (String)data[View.PixelInfo.RGBformatted.ordinal()];
+					showPixelInfo(event);
 				}
 			}
 		});
@@ -576,5 +568,19 @@ public class View extends Canvas {
 				m_dragSource.setTransfer(new Transfer[] { ImageTransfer.getInstance() });				
 			}
 		}
+	}
+	
+	private void showPixelInfo(MouseEvent event) {
+		Object[] data;
+		
+		if (m_twins.useMeanColor()) {
+			data = getPixelInfoAt(event.x,  event.y, MeanAreaRad);
+			m_twins.m_mainWnd.showPixelInfo(data, true);
+		} else {
+			data = getPixelInfoAt(event.x,  event.y, 0);
+			m_twins.m_mainWnd.showPixelInfo(data, false);
+		}
+		if (data != null) m_clipboardText = (String)data[View.PixelInfo.RGBformatted.ordinal()];
+
 	}
 }

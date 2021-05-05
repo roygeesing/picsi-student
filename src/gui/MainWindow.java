@@ -188,7 +188,7 @@ public class MainWindow {
 	 * Set the status label to show color information
 	 * for the specified pixel in the image.
 	 */
-	public void showColorForPixel(Object[] args, boolean average) {
+	public void showPixelInfo(Object[] args, boolean average) {
 		if (args == null) {
 			m_statusLabel.setText("");
 		} else {
