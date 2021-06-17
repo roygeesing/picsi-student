@@ -450,7 +450,7 @@ public class MainWindow {
 				menuItems[SAVEINPAS].setEnabled(!m_views.isEmpty());
 				menuItems[EDIT].setEnabled(!m_views.isEmpty());
 				menuItems[PRINT].setEnabled(!m_views.isEmpty());
-				menuItems[SWAP].setEnabled(m_views.hasSecondView());
+				menuItems[SWAP].setEnabled(!m_views.isEmpty());
 			}
 		});
 		
@@ -707,6 +707,9 @@ public class MainWindow {
 				if (m_views.hasSecondView()) {
 					// swap images
 					swapViews();
+				} else {
+					// copy from first to second view
+					m_views.copyImages();
 				}
 			}
 		});

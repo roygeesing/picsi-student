@@ -201,6 +201,11 @@ public class TwinView extends Composite {
 		refresh(false);
 	}
 	
+	public void copyImages() {
+		//m_doc2 = m_doc1.clone();
+		showImageInSecondView(m_doc1.getImage());
+	}
+	
 	private void showImage(boolean first) {
 		if (first) {
 			updateFirstView();
