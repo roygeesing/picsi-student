@@ -38,8 +38,8 @@ public class MainWindow {
 	private String m_lastPath; // used to seed the file dialog
 	private Label m_statusLabel, m_zoomLabel;
 	private MenuItem m_editMenuItem;
-	private MAGB m_magb;
-	private BVER m_bver;
+	private MAGB m_magb; // used in find and run
+	private BVER m_bver; // "
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////7
 	// public methods section
@@ -120,10 +120,9 @@ public class MainWindow {
 							m_views.showImageInFirstView(inData, name);
 				        } else if (FileTransfer.getInstance().isSupportedType(event.currentDataType)) {
 				        	// file transfer
-				        	String[] files = (String[])event.data;
-				        	//System.out.println(files[0]);
-							m_mru.moveFileNameToTop(-1, files[0]);
-							updateFile(files[0]);
+				        	String[] fileNames = (String[])event.data;
+							m_mru.moveFileNameToTop(-1, fileNames[0]);
+							updateFile(fileNames[0]);
 				        }
 					}
 				}			
@@ -161,7 +160,7 @@ public class MainWindow {
 			data = new GridData(SWT.FILL, SWT.FILL, true, true);
 			m_statusLabel.setLayoutData(data);
 			
-			// Label to show zoom value
+			// Label to show image size and zoom value
 			m_zoomLabel = new Label(compo, SWT.RIGHT);
 			data = new GridData(SWT.RIGHT, SWT.FILL, false, true);
 			data.widthHint = 200;
@@ -213,7 +212,7 @@ public class MainWindow {
 	}
 	
 	/**
-	 * Show zoom factors in status
+	 * Show image size and zoom factors in status bar
 	 * @param zoom1
 	 * @param zoom2
 	 */
@@ -1172,12 +1171,12 @@ public class MainWindow {
 			if (si != null) {
 				m_views.save(first, si.filename, si.fileType);
 			} else {
-				assert m_views.getDocument(first).getFileName() != null : "doc has no filename";
+				assert fileName != null : "doc has no filename";
 				m_views.save(first, null, -1);
 			}
 			return true;
 		} catch (Throwable e) {
-			showErrorDialog("saving", (si != null) ? si.filename : m_views.getDocument(first).getFileName(), e);
+			showErrorDialog("saving", (si != null) ? si.filename : fileName, e);
 			return false;
 		} finally {
 			m_shell.setCursor(cursor);
@@ -1210,7 +1209,7 @@ public class MainWindow {
 	
 	private boolean swapViews() {
 		// current output view will become input view
-		// save output
+		// save output file
 		Document doc = m_views.getDocument(false);
 		String filename = doc.getFileName();
 		if (filename == null) {
