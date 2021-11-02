@@ -295,7 +295,6 @@ public class ColorSpaces {
 					xyz[0] = (double)u/sMax;
 						
 					xyz2rgb(xyz, rgb);
-					rgb2sRGB(rgb, rgb);
 					//System.out.println(Arrays.toString(rgb));
 						
 					if (rgb[0] >= 0 && rgb[0] <= 1 && rgb[1] >= 0 && rgb[1] <= 1 && rgb[2] >= 0 && rgb[2] <= 1) {
