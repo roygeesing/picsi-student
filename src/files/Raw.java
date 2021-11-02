@@ -20,19 +20,18 @@ public class Raw implements IImageFile {
 		RandomAccessFile raf = new RandomAccessFile(fileName, "r");
 		
 		try {
-			// read header (1024 bytes)
-			raf.seek(468);
 			// read width and height in little-endian format and convert to big-endian Java format
+			raf.seek(468);
 			int width = little2bigEndian(raf.readInt());
 			int stride = ((width + 3)/4)*4;
 			int height = little2bigEndian(raf.readInt());
 						
-			// read raw data
+			// read raw data (total header size is 1024 bytes)
 			byte[] raw = new byte[stride*height];
 			raf.seek(1024);
 			raf.read(raw);
 			
-			// create image
+			// create grayscale image with palette
 			RGB[] grayscale = new RGB[256];
 			for(int i = 0; i < grayscale.length; i++) grayscale[i] = new RGB(i, i, i);
 			return new ImageData(width, height, 8, new PaletteData(grayscale), 4, raw);	// stride is a multiple of 4 bytes
