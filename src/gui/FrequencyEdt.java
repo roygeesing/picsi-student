@@ -333,9 +333,7 @@ public class FrequencyEdt extends Dialog {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
 				// reset table entries to input image
-				m_shell.setCursor(m_shell.getDisplay().getSystemCursor(SWT.CURSOR_WAIT));   	
 				update(views);
-				m_shell.setCursor(m_shell.getDisplay().getSystemCursor(SWT.CURSOR_ARROW));   	
 			}
 		});
 		
@@ -392,6 +390,8 @@ public class FrequencyEdt extends Dialog {
 
     	// update output: recursively calling update is prevented in updateOutput
     	updateOutput(views, 0);
+    	m_lowPassEdt.setText("");
+    	m_highPassEdt.setText("");
     	shell.setCursor(cursor);			
     }
 
@@ -449,7 +449,7 @@ public class FrequencyEdt extends Dialog {
      * @param lowPass
      */
     private void applyFilter(String s, boolean lowPass) {
-    	final int sigmoidScale = 2;
+    	final int sigmoidScale = 1;
 		final int sigmoidDomain = 16*sigmoidScale;
     	final int width = m_fd.getSpectrumWidth();
     	final int height = m_fd.getSpectrumHeight();
