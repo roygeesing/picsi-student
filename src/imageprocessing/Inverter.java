@@ -4,6 +4,7 @@ import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.RGB;
 
+import main.Picsi;
 import utils.Parallel;
 
 /**
@@ -31,7 +32,17 @@ public class Inverter implements IImageProcessor {
 	 * @param imageType
 	 */
 	public static void invert(ImageData imageData, int imageType) {
-		if (imageData.palette.isDirect) {
+		if (imageType == Picsi.IMAGE_TYPE_INDEXED) {
+			// change palette
+			RGB[] paletteIn = imageData.getRGBs();
+			RGB[] paletteOut = new RGB[paletteIn.length];
+			
+			for (int i=0; i < paletteIn.length; i++) {
+				RGB rgbIn = paletteIn[i];
+				paletteOut[i] = new RGB(255 - rgbIn.red, 255 - rgbIn.green, 255 - rgbIn.blue);
+			}
+			imageData.palette = new PaletteData(paletteOut);
+		} else {
 			// change pixel colors
 			Parallel.For(0, imageData.height, v -> {
 				for (int u=0; u < imageData.width; u++) {
@@ -44,16 +55,6 @@ public class Inverter implements IImageProcessor {
 					imageData.setPixel(u, v, imageData.palette.getPixel(rgb));*/
 				}
 			});
-		} else {
-			// change palette
-			RGB[] paletteIn = imageData.getRGBs();
-			RGB[] paletteOut = new RGB[paletteIn.length];
-			
-			for (int i=0; i < paletteIn.length; i++) {
-				RGB rgbIn = paletteIn[i];
-				paletteOut[i] = new RGB(255 - rgbIn.red, 255 - rgbIn.green, 255 - rgbIn.blue);
-			}
-			imageData.palette = new PaletteData(paletteOut);
 		}
 	}
 }
