@@ -9,8 +9,7 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.*;
 
-//import imageprocessing.ContrastEnhancement;
-import imageprocessing.FFT;
+import imageprocessing.fourier.FFT;
 import utils.FrequencyDomain;
 import utils.Parallel;
 

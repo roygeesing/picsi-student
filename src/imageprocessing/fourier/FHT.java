@@ -1,8 +1,9 @@
-package imageprocessing;
+package imageprocessing.fourier;
 
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
 
+import imageprocessing.ImageProcessing;
 import utils.Complex;
 
 /**

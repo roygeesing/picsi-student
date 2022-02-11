@@ -1,4 +1,4 @@
-package imageprocessing;
+package imageprocessing.fourier;
 
 import utils.Complex;
 

@@ -1,11 +1,9 @@
-package imageprocessing;
+package gui;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.MenuItem;
 
-import gui.ImageMenu;
-import gui.MRU;
-import gui.TwinView;
+import imageprocessing.colors.Inverter;
 
 /**
  * Image processing module magb

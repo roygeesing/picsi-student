@@ -1,8 +1,9 @@
-package imageprocessing;
+package imageprocessing.colors;
 
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.RGB;
 
+import imageprocessing.ImageProcessing;
 import main.Picsi;
 import utils.Parallel;
 

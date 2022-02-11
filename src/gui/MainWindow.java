@@ -16,10 +16,8 @@ import org.eclipse.swt.widgets.*;
 import main.Picsi;
 import files.Document;
 import files.ImageFiles;
-import imageprocessing.BVER;
-import imageprocessing.ColorSpaces;
 import imageprocessing.ImageProcessing;
-import imageprocessing.MAGB;
+import imageprocessing.colors.ColorSpaces;
 
 /**
  * Picsi SWT main window

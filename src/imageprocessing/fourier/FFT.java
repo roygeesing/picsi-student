@@ -1,4 +1,4 @@
-package imageprocessing;
+package imageprocessing.fourier;
 
 import main.Picsi;
 
@@ -8,6 +8,8 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.ImageData;
 
 import gui.OptionPane;
+import imageprocessing.IImageProcessor;
+import imageprocessing.ImageProcessing;
 import utils.Complex;
 import utils.FrequencyDomain;
 import utils.Parallel;

@@ -1,4 +1,4 @@
-package imageprocessing;
+package imageprocessing.fourier;
 
 /**
  * This class contains a Java implementation of the Fast Hartley Transform. It
