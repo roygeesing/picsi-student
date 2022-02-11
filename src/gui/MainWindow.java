@@ -36,8 +36,7 @@ public class MainWindow {
 	private String m_lastPath; // used to seed the file dialog
 	private Label m_statusLabel, m_zoomLabel;
 	private MenuItem m_editMenuItem;
-	private MAGB m_magb; // used in find and run
-	private BVER m_bver; // "
+	private ImageMenu m_imageMenu; // "
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////7
 	// public methods section
@@ -407,8 +406,7 @@ public class MainWindow {
 		Menu menuBar = new Menu(m_shell, SWT.BAR);
 		m_shell.setMenuBar(menuBar);
 		createFileMenu(menuBar);
-		createMagbMenu(menuBar);
-		createBverMenu(menuBar);
+		createImageMenu(menuBar);
 		createColorSpacesMenu(menuBar);
 		createToolsMenu(menuBar);
 		createWindowMenu(menuBar);
@@ -500,9 +498,7 @@ public class MainWindow {
 					updateFile(filename);
 					String lastOperation = m_mru.getLastOperation();
 					if (lastOperation != null) {
-						if (!m_magb.findAndRun(lastOperation)) {
-							m_bver.findAndRun(lastOperation);
-						}
+						m_imageMenu.findAndRun(lastOperation);
 					}
 				}
 			}
@@ -724,23 +720,13 @@ public class MainWindow {
 		});
 	}
 	
-	// MAGB menu
-	private void createMagbMenu(Menu menuBar) {
+	// Image menu
+	private void createImageMenu(Menu menuBar) {
 		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
-		item.setText("&MAGB");
+		item.setText("&Image");
 		
 		// user defined image menu items
-		m_magb = new MAGB(item, m_views, m_mru);
-		
-	}
-	
-	// BVER menu
-	private void createBverMenu(Menu menuBar) {
-		MenuItem item = new MenuItem(menuBar, SWT.CASCADE);
-		item.setText("&BVER");
-		
-		// user defined image menu items
-		m_bver = new BVER(item, m_views, m_mru);
+		m_imageMenu = new ImageMenu(item, m_views, m_mru);
 
 	}
 
