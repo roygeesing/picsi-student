@@ -36,7 +36,7 @@ public class MainWindow {
 	private String m_lastPath; // used to seed the file dialog
 	private Label m_statusLabel, m_zoomLabel;
 	private MenuItem m_editMenuItem;
-	private ImageMenu m_imageMenu; // "
+	private ImageMenu m_imageMenu; // used in find-and-run
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////7
 	// public methods section
