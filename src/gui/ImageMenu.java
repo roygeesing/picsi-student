@@ -1,11 +1,10 @@
 package gui;
 
+import imageprocessing.colors.*;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.MenuItem;
 
 import imageprocessing.Cropping;
-import imageprocessing.colors.ChannelRGB;
-import imageprocessing.colors.Inverter;
 
 /**
  * Image processing menu
@@ -24,6 +23,9 @@ public class ImageMenu extends UserMenu {
 
 		add("C&ropping\tCtrl+R", 								SWT.CTRL | 'R', new Cropping());
 		add("&Invert\tF1", 										SWT.F1, 		new Inverter());
+		add("MyInvert", 0, new MyInverter());
+		add("Grayscale", 0, new Grayscale());
+		add("Dither", 0, new Dither());
 
 		UserMenu channels = addMenu("Channel");		
 		channels.add("R\tCtrl+1", 								SWT.CTRL | '1', new ChannelRGB(0));
