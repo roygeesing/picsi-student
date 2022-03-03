@@ -25,16 +25,16 @@ public class Dither implements IImageProcessor {
                 int error = pixel - closest;
 
                 if (x < inData.width - 1) {
-                    inData.setPixel(x + 1, y, inData.getPixel(x + 1, y) + error * 7 / 16);
+                    inData.setPixel(x + 1, y, clamp(inData.getPixel(x + 1, y) + error * 7 / 16));
                 }
                 if (x > 0 && y < inData.height - 1) {
-                    inData.setPixel(x - 1, y + 1, inData.getPixel(x - 1, y + 1) + error * 3 / 16);
+                    inData.setPixel(x - 1, y + 1, clamp(inData.getPixel(x - 1, y + 1) + error * 3 / 16));
                 }
                 if (y < inData.height - 1) {
-                    inData.setPixel(x, y + 1, inData.getPixel(x, y + 1) + error * 5 / 16);
+                    inData.setPixel(x, y + 1, clamp(inData.getPixel(x, y + 1) + error * 5 / 16));
                 }
                 if (x < inData.width - 1 && y < inData.height - 1) {
-                    inData.setPixel(x + 1, y + 1, inData.getPixel(x + 1, y + 1) + error / 16);
+                    inData.setPixel(x + 1, y + 1, clamp(inData.getPixel(x + 1, y + 1) + error / 16));
                 }
 
                 int binary = closest == 255 ? 0 : 1;
@@ -43,5 +43,9 @@ public class Dither implements IImageProcessor {
         }
 
         return image;
+    }
+
+    private int clamp(int number) {
+        return Math.max(Math.min(number, 255), 0);
     }
 }
