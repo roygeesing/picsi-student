@@ -3,6 +3,7 @@ package gui;
 import imageprocessing.colors.*;
 import imageprocessing.transform.Rotate;
 import imageprocessing.transform.RotateAndScale;
+import imageprocessing.transform.Scale;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.MenuItem;
 
@@ -37,6 +38,7 @@ public class ImageMenu extends UserMenu {
 		UserMenu transform = addMenu("Transform");
 		transform.add("Rotate", 0, new Rotate());
 		transform.add("Rotate and scale", 0, new RotateAndScale());
+		transform.add("Scale", 0, new Scale());
 		
 		// TODO add here further image processing entries (they are inserted into the Image menu)
 	}	
